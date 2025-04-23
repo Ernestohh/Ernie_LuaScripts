@@ -1231,7 +1231,10 @@ function KerapacCore.handleCombat(state)
 
         if state == Data.bossStateEnum.LIGHTNING_ATTACK.name and not KerapacCore.islightningPhase then
             KerapacCore.log("Lightning Phase active ------------")
-            API.DoAction_Dive_Tile(WPOINT.new(KerapacCore.playerPosition.x - 12, KerapacCore.playerPosition.y, 0))
+            local surgeAB = API.GetABs_name("Surge")
+            API.DoAction_Tile(WPOINT.new(KerapacCore.playerPosition.x - 12, KerapacCore.playerPosition.y, 0))
+            KerapacCore.sleepTickRandom(1)
+            API.DoAction_Ability_Direct(surgeAB, 1, API.OFF_ACT_GeneralInterface_route)
             KerapacCore.sleepTickRandom(3)
             KerapacCore.attackKerapac()
             KerapacCore.islightningPhase = true
@@ -1425,7 +1428,7 @@ function KerapacCore.calculateSafePosition(playerPosition)
             else
                 avgDirection = 270 
             end
-            avgDirection = (avgDirection + 360) % 360
+            avgDirection = (avgDirection) % 360
         end
         safestDirection = avgDirection
         
@@ -1452,6 +1455,7 @@ function KerapacCore.performDodge(safeWPOINT)
     elseif (surgeAB.cooldown_timer <= 0) then
         KerapacCore.log("Surging to x: " .. safeWPOINT.x .. " y: " .. safeWPOINT.y)
         API.DoAction_Tile(safeWPOINT)
+        KerapacCore.sleepTickRandom(1)
         API.DoAction_Ability_Direct(surgeAB, 1, API.OFF_ACT_GeneralInterface_route)
     else
         KerapacCore.log("Running to x: " .. safeWPOINT.x .. " y: " .. safeWPOINT.y)
