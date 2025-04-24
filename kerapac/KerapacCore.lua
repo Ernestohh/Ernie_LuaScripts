@@ -327,7 +327,7 @@ function KerapacCore.getBossStateFromAnimation(animation)
 end
 
 function KerapacCore.enableMagePray()
-    if API.Buffbar_GetIDstatus(Data.extraAbilities.splitSoulAbility.buffId).found and API.GetPrayPrecent > 0 then 
+    if API.Buffbar_GetIDstatus(Data.extraAbilities.splitSoulAbility.buffId).found and API.GetPrayPrecent() > 0 then 
         KerapacCore.log("splitsoul active")
         return 
     end
