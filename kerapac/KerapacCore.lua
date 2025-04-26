@@ -327,7 +327,7 @@ function KerapacCore.getBossStateFromAnimation(animation)
 end
 
 function KerapacCore.enableMagePray()
-    if API.Buffbar_GetIDstatus(Data.extraAbilities.splitSoulAbility.buffId).found and API.GetPrayPrecent() > 0 then 
+    if API.Buffbar_GetIDstatus(Data.extraAbilities.splitSoulAbility.buffId).found and API.GetPrayPrecent > 0 then 
         KerapacCore.log("splitsoul active")
         return 
     end
@@ -384,6 +384,7 @@ function KerapacCore.enableMeleePray()
 end
 
 function KerapacCore.enableSoulSplit()
+    local overheadTable = nil
     if KerapacCore.selectedPrayerType == "Curses" then
         overheadTable = Data.overheadCursesBuffs
     else
@@ -398,6 +399,29 @@ function KerapacCore.enableSoulSplit()
         
         if not API.Buffbar_GetIDstatus(buffId).found and ability.id ~= 0 then
             KerapacCore.log("Activate " .. selectedOverheadData.name)
+            API.DoAction_Ability_Direct(ability, 1, API.OFF_ACT_GeneralInterface_route)
+        end
+    else
+        KerapacCore.log("No valid overhead prayer selected or data not found.")
+    end
+end
+
+function KerapacCore.disableSoulSplit()
+    local overheadTable = nil
+    if KerapacCore.selectedPrayerType == "Curses" then
+        overheadTable = Data.overheadCursesBuffs
+    else
+        KerapacCore.log("Invalid prayer type selected.")
+        return
+    end
+    
+    local selectedOverheadData = overheadTable.SoulSplit
+    if selectedOverheadData then
+        local buffId = selectedOverheadData.buffId
+        local ability = selectedOverheadData.AB
+        
+        if API.Buffbar_GetIDstatus(buffId).found and ability.id ~= 0 then
+            KerapacCore.log("Deactivate " .. selectedOverheadData.name)
             API.DoAction_Ability_Direct(ability, 1, API.OFF_ACT_GeneralInterface_route)
         end
     else
@@ -682,7 +706,7 @@ end
 function KerapacCore.enableScripture(book)
     if book.AB.id > 0 and
     book.AB.enabled and 
-    not API.Buffbar_GetIDstatus(book.buffId).found then
+    not API.Buffbar_GetIDstatus(book.itemId).found then
         API.DoAction_Ability_check(book.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
         KerapacCore.log("Enabling Scripture")
         KerapacCore.hasScriptureBuff = true
@@ -832,8 +856,6 @@ function KerapacCore.HandleBanking()
 end
 
 function KerapacCore.prepareForBattle()
-    KerapacCore.HandlePrayerRestore()
-    KerapacCore.HandleBanking()
     KerapacCore.summonFamiliar()
     KerapacCore.renewFamiliar()
     KerapacCore.setupAutoFire()
@@ -1070,7 +1092,6 @@ function KerapacCore.handleBossLoot()
         if not API.LootWindowOpen_2() then 
             KerapacCore.log("Opening loot window")
             API.DoAction_G_Items1(0x2d, guaranteedDrop, 30)
-            KerapacCore.sleepTickRandom(3)
         end
         
         if API.LootWindowOpen_2() and (API.LootWindow_GetData()[1].itemid1 > 0) and not KerapacCore.isLooted then 
@@ -1089,7 +1110,6 @@ function KerapacCore.handleBossLoot()
             end
             
             local inventorySlotsRemaining = Inventory:FreeSpaces() - #lootInWindow
-            KerapacCore.sleepTickRandom(2)
             
             if inventorySlotsRemaining < 0 then
                 local slotsNeeded = -inventorySlotsRemaining
@@ -1131,6 +1151,7 @@ end
 
 function KerapacCore.handleBossDeath()
     KerapacCore.disableMagePray()
+    KerapacCore.disableSoulSplit()
     KerapacCore.disablePassivePrayer()
     KerapacCore.isInBattle = false
     KerapacCore.isTimeToLoot = true

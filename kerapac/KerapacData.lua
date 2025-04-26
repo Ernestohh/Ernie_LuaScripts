@@ -289,25 +289,25 @@ local extraBuffs = {
     scriptureOfJas = {
         name = "Scripture of Jas", 
         itemId = 51814,
-        buffId = 182886, 
+        buffId = 51814, 
         AB = nil
     },
     scriptureOfWen = {
         name = "Scripture of Wen", 
         itemId = 52117,
-        buffId = 183189, 
+        buffId = 52117, 
         AB = nil
     },
     scriptureOfFul = {
         name = "Scripture of Ful", 
         itemId = 52494,
-        buffId = 183556, 
+        buffId = 52494, 
         AB = nil
     },
     scriptureOfAmascut = {
         name = "Scripture of Amascut", 
         itemId = 57126,
-        buffId = 188198, 
+        buffId = 57126, 
         AB = nil
     },
 }
