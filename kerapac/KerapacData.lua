@@ -1,4 +1,4 @@
-local version = "8.0"
+local version = "8.2"
 
 local partyLeader = nil -- replace nil with playername like this "Bob" 
 local partyMembers = {} -- Add all player names including partyleader like this {"Bob", "Jo", "Mama"}
