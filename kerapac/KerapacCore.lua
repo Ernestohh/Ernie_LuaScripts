@@ -1017,7 +1017,16 @@ function KerapacCore.WaitForPartyToBeComplete()
     for i = 1, #players do
         local player = players[i]
         table.insert(playersInVicinity, player.Name)
+        local currentTile = FFPOINT.new(player.TileX, player.TileY, player.TileZ)
         KerapacCore.log(player.Name)
+        KerapacCore.log("Player tile x: " .. player.TileX .. " Player tile y: " .. player.TileY .. " Player tile z: " .. player.TileZ)
+        KerapacCore.log("Player anim: " .. player.Anim)
+        KerapacCore.log("In Combat: " .. tostring(API.IsInCombat_(player.Name)))
+        KerapacCore.sleepTickRandom(3)
+        if currentTile ~= FFPOINT.new(player.TileX, player.TileY, player.TileZ) then
+            KerapacCore.log("Player moved, new Player tile x: " .. player.TileX .. " Player tile y: " .. player.TileY .. " Player tile z: " .. player.TileZ)
+        end
+
     end
     playersInVicinity = KerapacCore.RemoveDuplicates(playersInVicinity)
     KerapacCore.isTeamComplete = KerapacCore.CheckTables(playersInVicinity, Data.partyMembers)
@@ -1025,7 +1034,7 @@ function KerapacCore.WaitForPartyToBeComplete()
     KerapacCore.sleepTickRandom(1)
     
 end
-
+KerapacCore.WaitForPartyToBeComplete()
 function KerapacCore.BeginFight()
     KerapacCore.log("Start encounter")
     KerapacCore.playerPosition = API.PlayerCoord()
@@ -1092,6 +1101,7 @@ function KerapacCore.handleBossLoot()
         if not API.LootWindowOpen_2() then 
             KerapacCore.log("Opening loot window")
             API.DoAction_G_Items1(0x2d, guaranteedDrop, 30)
+            API.WaitUntilMovingEnds(6,10)
         end
         
         if API.LootWindowOpen_2() and (API.LootWindow_GetData()[1].itemid1 > 0) and not KerapacCore.isLooted then 
