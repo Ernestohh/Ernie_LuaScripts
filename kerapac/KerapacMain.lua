@@ -18,12 +18,12 @@ while (API.Read_LoopyLoop()) do
                 Core.checkStartLocation()
             end
             
-            if Core.isInWarsRetreat and not Core.isBanking and not Core.isPrepared and API.Read_LoopyLoop() then
-                Core.HandleBanking()
-            end
-
             if Core.isInWarsRetreat and not Core.isRestoringPrayer and not Core.isPrepared and API.Read_LoopyLoop() then
                 Core.HandlePrayerRestore()
+            end
+
+            if Core.isInWarsRetreat and not Core.isBanking and not Core.isPrepared and API.Read_LoopyLoop() then
+                Core.HandleBanking()
             end
 
             if Core.isInWarsRetreat and Core.isBanking and Core.isRestoringPrayer and not Core.isPrepared and API.Read_LoopyLoop() then
