@@ -1017,16 +1017,6 @@ function KerapacCore.WaitForPartyToBeComplete()
     for i = 1, #players do
         local player = players[i]
         table.insert(playersInVicinity, player.Name)
-        local currentTile = FFPOINT.new(player.TileX, player.TileY, player.TileZ)
-        KerapacCore.log(player.Name)
-        KerapacCore.log("Player tile x: " .. player.TileX .. " Player tile y: " .. player.TileY .. " Player tile z: " .. player.TileZ)
-        KerapacCore.log("Player anim: " .. player.Anim)
-        KerapacCore.log("In Combat: " .. tostring(API.IsInCombat_(player.Name)))
-        KerapacCore.sleepTickRandom(3)
-        if currentTile ~= FFPOINT.new(player.TileX, player.TileY, player.TileZ) then
-            KerapacCore.log("Player moved, new Player tile x: " .. player.TileX .. " Player tile y: " .. player.TileY .. " Player tile z: " .. player.TileZ)
-        end
-
     end
     playersInVicinity = KerapacCore.RemoveDuplicates(playersInVicinity)
     KerapacCore.isTeamComplete = KerapacCore.CheckTables(playersInVicinity, Data.partyMembers)
