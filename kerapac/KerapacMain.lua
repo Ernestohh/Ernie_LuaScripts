@@ -12,14 +12,11 @@ while (API.Read_LoopyLoop()) do
     if Core.guiVisible then
         Core.DrawGui() 
     end
+    Core.handleCombatMode()
     if Core.startScript then
         if not Core.isInBattle and not Core.isTimeToLoot then
             if not Core.isInWarsRetreat then
                 Core.checkStartLocation()
-            end
-
-            if not Core.isFullManualEnabled and Core.isInWarsRetreat then
-                Core.handleCombatMode()
             end
             
             if Core.isFullManualEnabled and not Core.isRestoringPrayer and not Core.isPrepared and API.Read_LoopyLoop() then
