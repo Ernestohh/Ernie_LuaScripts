@@ -17,8 +17,12 @@ while (API.Read_LoopyLoop()) do
             if not Core.isInWarsRetreat then
                 Core.checkStartLocation()
             end
+
+            if not Core.isFullManualEnabled and Core.isInWarsRetreat then
+                Core.handleCombatMode()
+            end
             
-            if Core.isInWarsRetreat and not Core.isRestoringPrayer and not Core.isPrepared and API.Read_LoopyLoop() then
+            if Core.isFullManualEnabled and not Core.isRestoringPrayer and not Core.isPrepared and API.Read_LoopyLoop() then
                 Core.HandlePrayerRestore()
             end
 

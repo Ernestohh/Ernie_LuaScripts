@@ -38,6 +38,7 @@ local KerapacCore = {
     isResonanceEnabled = false,
     isMagePrayEnabled = false,
     isSoulSplitEnabled = false,
+    isFullManualEnabled = false,
     
     hasOverload = false,
     hasWeaponPoison = false,
@@ -263,7 +264,6 @@ function KerapacCore.whichFamiliar()
     return familiar
 end
 
-
 function KerapacCore.isFamiliarHpBelowPercentage(hpString, percentage)
     if not hpString or type(hpString) ~= "string" then
         return nil
@@ -301,6 +301,16 @@ function KerapacCore.isFamiliarHpBelowPercentage(hpString, percentage)
     local isBelow = currentHp < thresholdValue
 
     return isBelow
+end
+
+function KerapacCore.handleSpecialSummoning()
+    if not (API.Get_tick() - KerapacCore.summoningSpecialTicks > 4) then return end
+    if not Familiars:HasFamiliar() and not Familiars:GetSpellPoints() >= Data.summoningPointsForScroll then return end
+    if Familiars:GetName() ~= "Hellhound" then return end
+    local isHealable = KerapacCore.isFamiliarHpBelowPercentage(API.ScanForInterfaceTest2Get(false, { { 662,0,-1,0 }, { 662,43,-1,0 }, { 662,44,-1,0 }, { 662,64,-1,0 }, { 662,65,-1,0 }, { 662,66,-1,0 }, { 662,66,8,0 } })[1].textids, 70)
+    if not isHealable then return end
+    Familiars:CastSpecialAttack()
+    KerapacCore.summoningSpecialTicks = API.Get_tick()
 end
 
 function KerapacCore.getKerapacInformation()
@@ -487,8 +497,6 @@ function KerapacCore.disableSoulSplit()
         if API.Buffbar_GetIDstatus(buffId).found and ability.id ~= 0 then
             KerapacCore.log("Deactivate " .. selectedOverheadData.name)
             API.DoAction_Ability_Direct(ability, 1, API.OFF_ACT_GeneralInterface_route)
-            KerapacCore.isMagePrayEnabled = false
-            KerapacCore.isSoulSplitEnabled = false
         end
     else
         KerapacCore.log("No valid overhead prayer selected or data not found.")
@@ -514,8 +522,6 @@ function KerapacCore.disableMagePray()
         if API.Buffbar_GetIDstatus(buffId).found and ability.id ~= 0 then
             KerapacCore.log("Deactivate " .. selectedOverheadData.name)
             API.DoAction_Ability_Direct(ability, 1, API.OFF_ACT_GeneralInterface_route)
-            KerapacCore.isMagePrayEnabled = false
-            KerapacCore.isSoulSplitEnabled = false
         end
     else
         KerapacCore.log("No valid overhead prayer selected or data not found.")
@@ -1256,6 +1262,7 @@ function KerapacCore.managePlayer()
     KerapacCore.castNextAbility()
     KerapacCore.handleResonance()
     KerapacCore.applyVulnerability()
+    KerapacCore.handleSpecialSummoning()
     KerapacCore.eatFood()
     KerapacCore.drinkPrayer()
     KerapacCore.enablePassivePrayer()
@@ -1347,6 +1354,17 @@ end
 
 function KerapacCore.attackKerapac()
     API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { KerapacCore.getKerapacInformation().Id }, 50)
+end
+
+function KerapacCore.handleCombatMode()
+    if KerapacCore.isFullManualEnabled then return end
+    if API.VB_FindPSettinOrder(627, 0).state == 1073750353 then
+        KerapacCore.isFullManualEnabled = true
+        KerapacCore.sleepTickRandom(1)
+    else
+        API.DoAction_Interface(0xffffffff,0xffffffff,4,1430,265,-1,API.OFF_ACT_GeneralInterface_route)
+        KerapacCore.sleepTickRandom(1)
+    end
 end
 
 function KerapacCore.HandlePrayerRestore()
