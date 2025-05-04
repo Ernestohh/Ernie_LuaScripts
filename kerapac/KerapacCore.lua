@@ -37,6 +37,7 @@ local KerapacCore = {
     isClonesSetup = false,
     isResonanceEnabled = false,
     isMagePrayEnabled = false,
+    isMeleePrayEnabled = false,
     isSoulSplitEnabled = false,
     isFullManualEnabled = false,
     
@@ -417,6 +418,7 @@ function KerapacCore.enableMagePray()
             KerapacCore.log("Activate " .. selectedOverheadData.name)
             API.DoAction_Ability_Direct(ability, 1, API.OFF_ACT_GeneralInterface_route)
             KerapacCore.isMagePrayEnabled = true
+            KerapacCore.isMeleePrayEnabled = false
             KerapacCore.isSoulSplitEnabled = false
         end
     else
@@ -447,6 +449,7 @@ function KerapacCore.enableMeleePray()
             KerapacCore.log("Activate " .. selectedOverheadData.name)
             API.DoAction_Ability_Direct(ability, 1, API.OFF_ACT_GeneralInterface_route)
             KerapacCore.isMagePrayEnabled = false
+            KerapacCore.isMeleePrayEnabled = true
             KerapacCore.isSoulSplitEnabled = false
         end
     else
@@ -474,6 +477,7 @@ function KerapacCore.enableSoulSplit()
             KerapacCore.log("Activate " .. selectedOverheadData.name)
             API.DoAction_Ability_Direct(ability, 1, API.OFF_ACT_GeneralInterface_route)
             KerapacCore.isMagePrayEnabled = false
+            KerapacCore.isMeleePrayEnabled = false
             KerapacCore.isSoulSplitEnabled = true
         end
     else
@@ -1246,7 +1250,13 @@ function KerapacCore.castNextAbility()
 end
 
 function KerapacCore.handleResonance()
-    if not KerapacCore.isResonanceEnabled and not (API.Get_tick() - KerapacCore.resonanceTicks > 2) then return end
+    if not KerapacCore.isResonanceEnabled and not (API.Get_tick() - KerapacCore.resonanceTicks > 2) then 
+        if not KerapacCore.isMagePrayEnabled and not KerapacCore.isMeleePrayEnabled and not KerapacCore.isSoulSplitEnabled then
+            KerapacCore.enableMagePray()
+            KerapacCore.isResonanceEnabled = false
+        end
+        return 
+    end
     if API.Buffbar_GetIDstatus(Data.extraAbilities.resonanceAbility.buffId).found then
         if Data.overheadCursesBuffs.SoulSplit.AB.enabled and not KerapacCore.isSoulSplitEnabled then
             KerapacCore.enableSoulSplit()
