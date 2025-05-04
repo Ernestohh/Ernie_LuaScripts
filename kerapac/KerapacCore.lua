@@ -89,6 +89,7 @@ local KerapacCore = {
     hardModeCheckBox = nil,
     partyCheckBox = nil,
     partyLeaderCheckBox = nil,
+    adrenCheckbox = nil,
 
     selectedPrayerType = API.VB_FindPSettinOrder(3277, 0).state & 1,
     selectedPassive = nil,
@@ -115,6 +116,10 @@ KerapacCore.StartButton.box_name = "Start"
 KerapacCore.StartButton.box_start = FFPOINT.new(Data.MARGIN + Data.PADDING_X + 120, Data.BOX_START_Y + Data.PADDING_Y + 40, 0)
 KerapacCore.StartButton.box_size = FFPOINT.new(Data.BUTTON_WIDTH, Data.BUTTON_HEIGHT, 0)
 KerapacCore.StartButton.colour = ImColor.new(0, 255, 0)
+
+KerapacCore.adrenCheckbox = API.CreateIG_answer()
+KerapacCore.adrenCheckbox.box_name = "Adrenaline Crystal Unlocked"
+KerapacCore.adrenCheckbox.box_start = FFPOINT.new(Data.MARGIN + Data.PADDING_X + 120, Data.BOX_START_Y + Data.PADDING_Y + 60, 0)
 
 KerapacCore.hardModeCheckBox = API.CreateIG_answer()
 KerapacCore.hardModeCheckBox.box_name = "Hard Mode"
@@ -1933,6 +1938,12 @@ function KerapacCore.HandleStartButton()
                     KerapacCore.stopScript()
                 end
             end
+            if KerapacCore.adrenCheckbox.box_ticked then
+                KerapacCore.isMaxAdrenaline = false
+            else
+                KerapacCore.isMaxAdrenaline = true
+            end
+            KerapacCore.adrenCheckbox.remove = true
             KerapacCore.Background.remove = true
             KerapacCore.StartButton.remove = true
             KerapacCore.PassivesDropdown.remove = true
@@ -1971,6 +1982,7 @@ function KerapacCore.DrawButtons()
     API.DrawBox(KerapacCore.StartButton)
     API.DrawCheckbox(KerapacCore.hardModeCheckBox)
     API.DrawCheckbox(KerapacCore.partyCheckBox)
+    API.DrawCheckbox(KerapacCore.adrenCheckbox)
 end
 
 function KerapacCore.DrawGui()
