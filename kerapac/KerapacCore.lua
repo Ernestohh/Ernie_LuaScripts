@@ -1250,7 +1250,7 @@ function KerapacCore.handleResonance()
     if API.Buffbar_GetIDstatus(Data.extraAbilities.resonanceAbility.buffId).found then
         if Data.overheadCursesBuffs.SoulSplit.AB.enabled and not KerapacCore.isSoulSplitEnabled then
             KerapacCore.enableSoulSplit()
-        else
+        elseif KerapacCore.isMagePrayEnabled then
             KerapacCore.disableMagePray()
         end
     elseif not KerapacCore.isMagePrayEnabled then
