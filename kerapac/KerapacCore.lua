@@ -889,9 +889,9 @@ function KerapacCore.drinkWeaponPoison()
     
     for i = 1, #items, 1 do
         local ab = items[i]
-        local ability = API.GetABs_name(ab,true)
+        local ability = API.GetABs_name1(ab)
         if(ability.enabled)then
-        weaponPoisonAB = ability
+            weaponPoisonAB = ability
         end
     end
     API.DoAction_Ability_Direct(weaponPoisonAB, 1, API.OFF_ACT_GeneralInterface_route)
