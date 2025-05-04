@@ -1575,6 +1575,7 @@ function KerapacCore.BeginFight()
 
     if API.Container_Get_s(94, 55189) or API.Container_Get_s(94, 52504) then
         Data.extraAbilities.deathSkullsAbility.threshold = 60
+        KerapacCore.log("Ooo look at you, fancy boy")
     end
         
     KerapacCore.log("Reset compass")
