@@ -1067,7 +1067,10 @@ function KerapacCore.castNextAbility()
         return
     end
 
-    if Data.extraAbilities.livingDeathAbility.AB.cooldown_timer <= 0 and API.GetAddreline_() > 99 and not KerapacCore.isPhasing then
+    if Data.extraAbilities.livingDeathAbility.AB.cooldown_timer <= 0 
+    and API.GetAddreline_() > 99 
+    and not KerapacCore.isPhasing 
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.livingDeathAbility.AB.id).found then
         if KerapacCore.kerapacPhase >= 4 and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
             if API.GetHPrecent() > 70 then
                 KerapacCore.useWarpTime()
