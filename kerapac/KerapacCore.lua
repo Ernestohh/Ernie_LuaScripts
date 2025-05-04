@@ -962,6 +962,7 @@ function KerapacCore.hardModePhase4Setup()
     local echoes = API.GetAllObjArray1({Data.kerapacClones}, 60, {1})
     if not (#clones > 0) and not (#echoes > 0) then return end
     KerapacCore.isPhasing = false
+    KerapacCore.canAttack = true
     KerapacCore.enableMagePray()
     KerapacCore.setupEchoLocations()
     KerapacCore.setupPlayerTank(clones)
@@ -1002,7 +1003,6 @@ function KerapacCore.HandlePhase4()
         KerapacCore.sleepTickRandom(1)
         API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { killableEchoes[1].Id }, 10)
     elseif #killableEchoes == 0 then
-        KerapacCore.log("amount of killable echoes "..#killableEchoes)
         KerapacCore.attackKerapac()
     end
 
@@ -1256,7 +1256,6 @@ function KerapacCore.handleResonance()
     if not KerapacCore.isResonanceEnabled and not (API.Get_tick() - KerapacCore.resonanceTicks > 2) then 
         if not KerapacCore.isMagePrayEnabled and not KerapacCore.isMeleePrayEnabled and not KerapacCore.isSoulSplitEnabled then
             KerapacCore.enableMagePray()
-            KerapacCore.isResonanceEnabled = false
         end
         return 
     end
@@ -1266,6 +1265,8 @@ function KerapacCore.handleResonance()
         elseif KerapacCore.isMagePrayEnabled then
             KerapacCore.disableMagePray()
         end
+    else
+        KerapacCore.isResonanceEnabled = false
     end
     KerapacCore.resonanceTicks = API.Get_tick()
 end
