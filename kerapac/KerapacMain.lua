@@ -19,7 +19,7 @@ while (API.Read_LoopyLoop()) do
                 Core.checkStartLocation()
             end
             
-            if Core.isFullManualEnabled and not Core.isRestoringPrayer and not Core.isPrepared and API.Read_LoopyLoop() then
+            if Core.isInWarsRetreat and not Core.isRestoringPrayer and not Core.isPrepared and API.Read_LoopyLoop() then
                 Core.HandlePrayerRestore()
             end
 
