@@ -1143,7 +1143,7 @@ function KerapacCore.castNextAbility()
     and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_LANDED
     and KerapacCore.islightningPhase
     and not KerapacCore.isPhasing
-    and API.GetAddreline_() >= Data.extraAbilities.immortalityAbility.threshold then
+    and API.GetAddreline_() >= Data.extraAbilities.barricadeAbility.threshold then
         if KerapacCore.kerapacPhase >= 4 and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
             if API.GetHPrecent() > 70 then
                 KerapacCore.useWarpTime()
@@ -1172,7 +1172,7 @@ function KerapacCore.castNextAbility()
     and not KerapacCore.islightningPhase
     and not KerapacCore.isPhasing
     and KerapacCore.kerapacPhase >= 4
-    and API.GetAddreline_() >= Data.extraAbilities.immortalityAbility.threshold then
+    and API.GetAddreline_() >= Data.extraAbilities.rejuvenateAbility.threshold then
         if KerapacCore.kerapacPhase >= 4 and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
             if API.GetHPrecent() > 70 then
                 KerapacCore.useWarpTime()
