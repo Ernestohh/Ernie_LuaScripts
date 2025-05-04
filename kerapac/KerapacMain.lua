@@ -35,7 +35,7 @@ while (API.Read_LoopyLoop()) do
                 Core.handleAdrenalineCrystal()
             end
             
-            if Core.isMaxAdrenaline and not Core.isPortalUsed and API.Read_LoopyLoop() then
+            if Core.isPrepared and Core.isMaxAdrenaline and not Core.isPortalUsed and API.Read_LoopyLoop() then
                Core.goThroughPortal() 
             end
             

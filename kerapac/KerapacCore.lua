@@ -625,6 +625,16 @@ function KerapacCore.useImmortalityAbility()
     KerapacCore.log("Kill me, I dare you")
 end
 
+function KerapacCore.useBarricadeAbility()
+    API.DoAction_Ability_check(Data.extraAbilities.barricadeAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+    KerapacCore.log("Shield wall!")
+end
+
+function KerapacCore.useRejuvenateAbility()
+    API.DoAction_Ability_check(Data.extraAbilities.rejuvenateAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+    KerapacCore.log("Aaah.. Refreshing")
+end
+
 function KerapacCore.useResonanceAbility()
     API.DoAction_Ability_check(Data.extraAbilities.resonanceAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
     KerapacCore.log("Resonate with me")
@@ -1076,10 +1086,7 @@ function KerapacCore.castNextAbility()
         return
     end
 
-    if Data.extraAbilities.livingDeathAbility.AB.cooldown_timer <= 0 
-    and API.GetAddreline_() >= Data.extraAbilities.livingDeathAbility.threshold 
-    and not KerapacCore.isPhasing 
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.livingDeathAbility.AB.id).found then
+    if Data.extraAbilities.deathSkullsAbility.AB.cooldown_timer <= 0 and API.GetAddreline_() >= Data.extraAbilities.deathSkullsAbility.threshold and not KerapacCore.isPhasing then
         if KerapacCore.kerapacPhase >= 4 and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
             if API.GetHPrecent() > 70 then
                 KerapacCore.useWarpTime()
@@ -1091,7 +1098,7 @@ function KerapacCore.castNextAbility()
                 KerapacCore.useWarpTime()
             end
         end
-        KerapacCore.useLivingDeathAbility()
+        KerapacCore.useDeathSkullsAbility()
         return
     end
 
@@ -1100,6 +1107,8 @@ function KerapacCore.castNextAbility()
     and not API.Buffbar_GetIDstatus(Data.extraAbilities.reflectAbility.buffId).found
     and not API.Buffbar_GetIDstatus(Data.extraAbilities.devotionAbility.buffId).found
     and not API.Buffbar_GetIDstatus(Data.extraAbilities.immortalityAbility.buffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.barricadeAbility.buffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.rejuvenateAbility.buffId).found
     and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_COMMENCE
     and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_IN_AIR
     and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_LANDED
@@ -1122,7 +1131,19 @@ function KerapacCore.castNextAbility()
         return
     end
 
-    if Data.extraAbilities.deathSkullsAbility.AB.cooldown_timer <= 0 and API.GetAddreline_() >= Data.extraAbilities.deathSkullsAbility.threshold and not KerapacCore.isPhasing then
+    if Data.extraAbilities.barricadeAbility.AB.cooldown_timer <= 0 
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.debilitateAbility.debuffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.reflectAbility.buffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.devotionAbility.buffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.immortalityAbility.buffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.barricadeAbility.buffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.rejuvenateAbility.buffId).found
+    and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_COMMENCE
+    and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_IN_AIR
+    and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_LANDED
+    and KerapacCore.islightningPhase
+    and not KerapacCore.isPhasing
+    and API.GetAddreline_() >= Data.extraAbilities.immortalityAbility.threshold then
         if KerapacCore.kerapacPhase >= 4 and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
             if API.GetHPrecent() > 70 then
                 KerapacCore.useWarpTime()
@@ -1134,7 +1155,55 @@ function KerapacCore.castNextAbility()
                 KerapacCore.useWarpTime()
             end
         end
-        KerapacCore.useDeathSkullsAbility()
+        KerapacCore.useBarricadeAbility()
+        return
+    end
+
+    if Data.extraAbilities.rejuvenateAbility.AB.cooldown_timer <= 0 
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.debilitateAbility.debuffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.reflectAbility.buffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.devotionAbility.buffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.immortalityAbility.buffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.barricadeAbility.buffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.rejuvenateAbility.buffId).found
+    and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_COMMENCE
+    and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_IN_AIR
+    and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_LANDED
+    and not KerapacCore.islightningPhase
+    and not KerapacCore.isPhasing
+    and KerapacCore.kerapacPhase >= 4
+    and API.GetAddreline_() >= Data.extraAbilities.immortalityAbility.threshold then
+        if KerapacCore.kerapacPhase >= 4 and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
+            if API.GetHPrecent() > 70 then
+                KerapacCore.useWarpTime()
+            else
+                local oldThreshold = Data.emergencyEatThreshold
+                Data.emergencyEatThreshold = API.GetHPrecent()+10
+                KerapacCore.eatFood()
+                Data.emergencyEatThreshold = oldThreshold
+                KerapacCore.useWarpTime()
+            end
+        end
+        KerapacCore.useRejuvenateAbility()
+        return
+    end
+
+    if Data.extraAbilities.livingDeathAbility.AB.cooldown_timer <= 0 
+    and API.GetAddreline_() >= Data.extraAbilities.livingDeathAbility.threshold 
+    and not KerapacCore.isPhasing 
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.livingDeathAbility.AB.id).found then
+        if KerapacCore.kerapacPhase >= 4 and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
+            if API.GetHPrecent() > 70 then
+                KerapacCore.useWarpTime()
+            else
+                local oldThreshold = Data.emergencyEatThreshold
+                Data.emergencyEatThreshold = API.GetHPrecent()+10
+                KerapacCore.eatFood()
+                Data.emergencyEatThreshold = oldThreshold
+                KerapacCore.useWarpTime()
+            end
+        end
+        KerapacCore.useLivingDeathAbility()
         return
     end
 
@@ -1143,6 +1212,8 @@ function KerapacCore.castNextAbility()
     and not API.Buffbar_GetIDstatus(Data.extraAbilities.reflectAbility.buffId).found
     and not API.Buffbar_GetIDstatus(Data.extraAbilities.devotionAbility.buffId).found
     and not API.Buffbar_GetIDstatus(Data.extraAbilities.immortalityAbility.buffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.barricadeAbility.buffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.rejuvenateAbility.buffId).found
     and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_COMMENCE
     and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_IN_AIR
     and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_LANDED
@@ -1168,6 +1239,8 @@ function KerapacCore.castNextAbility()
     and not API.Buffbar_GetIDstatus(Data.extraAbilities.reflectAbility.buffId).found
     and not API.Buffbar_GetIDstatus(Data.extraAbilities.devotionAbility.buffId).found
     and not API.Buffbar_GetIDstatus(Data.extraAbilities.immortalityAbility.buffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.barricadeAbility.buffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.rejuvenateAbility.buffId).found
     and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_COMMENCE
     and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_IN_AIR
     and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_LANDED
@@ -1194,7 +1267,9 @@ function KerapacCore.castNextAbility()
     and not API.Buffbar_GetIDstatus(Data.extraAbilities.debilitateAbility.debuffId).found
     and not API.Buffbar_GetIDstatus(Data.extraAbilities.reflectAbility.buffId).found
     and not API.Buffbar_GetIDstatus(Data.extraAbilities.devotionAbility.buffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.immortalityAbility.buffId).found 
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.immortalityAbility.buffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.barricadeAbility.buffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.rejuvenateAbility.buffId).found
     and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_COMMENCE
     and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_IN_AIR
     and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_LANDED 

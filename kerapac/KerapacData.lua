@@ -274,6 +274,20 @@ local extraAbilities = {
         threshold = 100,
         adrenaline = -100
     },
+    barricadeAbility = {
+        name = "Barricade",
+        AB = nil,
+        buffId = 14228,
+        threshold = 100,
+        adrenaline = -100
+    },
+    rejuvenateAbility = {
+        name = "Rejuvenate",
+        AB = nil,
+        buffId = 14229,
+        threshold = 100,
+        adrenaline = -100
+    }
 }
 
 local overheadPrayersBuffs = {
