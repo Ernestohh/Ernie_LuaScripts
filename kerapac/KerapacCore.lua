@@ -1068,7 +1068,7 @@ function KerapacCore.castNextAbility()
     end
 
     if Data.extraAbilities.livingDeathAbility.AB.cooldown_timer <= 0 
-    and API.GetAddreline_() > 99 
+    and API.GetAddreline_() >= Data.extraAbilities.livingDeathAbility.threshold 
     and not KerapacCore.isPhasing 
     and not API.Buffbar_GetIDstatus(Data.extraAbilities.livingDeathAbility.AB.id).found then
         if KerapacCore.kerapacPhase >= 4 and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
@@ -1097,7 +1097,7 @@ function KerapacCore.castNextAbility()
     and not KerapacCore.islightningPhase
     and not KerapacCore.isPhasing
     and KerapacCore.kerapacPhase >= 4
-    and API.GetAddreline_() > 99 then
+    and API.GetAddreline_() >= Data.extraAbilities.immortalityAbility.threshold then
         if KerapacCore.kerapacPhase >= 4 and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
             if API.GetHPrecent() > 70 then
                 KerapacCore.useWarpTime()
@@ -1113,7 +1113,7 @@ function KerapacCore.castNextAbility()
         return
     end
 
-    if Data.extraAbilities.deathSkullsAbility.AB.cooldown_timer <= 0 and API.GetAddreline_() > 99 and not KerapacCore.isPhasing then
+    if Data.extraAbilities.deathSkullsAbility.AB.cooldown_timer <= 0 and API.GetAddreline_() >= Data.extraAbilities.deathSkullsAbility.threshold and not KerapacCore.isPhasing then
         if KerapacCore.kerapacPhase >= 4 and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
             if API.GetHPrecent() > 70 then
                 KerapacCore.useWarpTime()
@@ -1139,7 +1139,7 @@ function KerapacCore.castNextAbility()
     and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_LANDED
     and not KerapacCore.islightningPhase
     and not KerapacCore.isPhasing
-    and API.GetAddreline_() > 50 then
+    and API.GetAddreline_() >= Data.extraAbilities.devotionAbility.threshold then
         if KerapacCore.kerapacPhase >= 4 and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
             if API.GetHPrecent() > 70 then
                 KerapacCore.useWarpTime()
@@ -1163,7 +1163,7 @@ function KerapacCore.castNextAbility()
     and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_IN_AIR
     and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_LANDED
     and not KerapacCore.isPhasing
-    and API.GetAddreline_() > 50 then
+    and API.GetAddreline_() >= Data.extraAbilities.debilitateAbility.threshold then
         if KerapacCore.kerapacPhase >= 4 and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
             if API.GetHPrecent() > 70 then
                 KerapacCore.useWarpTime()
@@ -1181,7 +1181,7 @@ function KerapacCore.castNextAbility()
     end
 
     if Data.extraAbilities.reflectAbility.AB.cooldown_timer <= 0 
-    and API.GetAddreline_() > 50 
+    and API.GetAddreline_() >= Data.extraAbilities.reflectAbility.threshold
     and not API.Buffbar_GetIDstatus(Data.extraAbilities.debilitateAbility.debuffId).found
     and not API.Buffbar_GetIDstatus(Data.extraAbilities.reflectAbility.buffId).found
     and not API.Buffbar_GetIDstatus(Data.extraAbilities.devotionAbility.buffId).found
@@ -1572,6 +1572,10 @@ function KerapacCore.BeginFight()
     KerapacCore.playerPosition = API.PlayerCoord()
     KerapacCore.centerOfArenaPosition = FFPOINT.new(KerapacCore.playerPosition.x - 7, KerapacCore.playerPosition.y, 0)
     KerapacCore.startLocationOfArena = FFPOINT.new(KerapacCore.playerPosition.x - 25, KerapacCore.playerPosition.y, 0)
+
+    if API.Container_Get_s(94, 55189) or API.Container_Get_s(94, 52504) then
+        Data.extraAbilities.deathSkullsAbility.threshold = 60
+    end
         
     KerapacCore.log("Reset compass")
     API.DoAction_Interface(0xffffffff, 0xffffffff, 1, 1919, 2, -1, API.OFF_ACT_GeneralInterface_route)
