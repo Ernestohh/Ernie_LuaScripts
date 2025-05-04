@@ -1266,9 +1266,6 @@ function KerapacCore.handleResonance()
         elseif KerapacCore.isMagePrayEnabled then
             KerapacCore.disableMagePray()
         end
-    elseif not KerapacCore.isMagePrayEnabled then
-        KerapacCore.enableMagePray()
-        KerapacCore.isResonanceEnabled = false
     end
     KerapacCore.resonanceTicks = API.Get_tick()
 end
