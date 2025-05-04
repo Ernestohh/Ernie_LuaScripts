@@ -1530,14 +1530,48 @@ function KerapacCore.RemoveDuplicates(tbl)
 end
 
 function KerapacCore.CheckTables(tbl1, tbl2)
-    local freq1, freq2 = {}, {}
-
-    for _, v in ipairs(tbl1) do
-        freq1[v] = (freq1[v] or 0) + 1
+    if type(tbl1) == "string" then tbl1 = {tbl1} end
+    if type(tbl2) == "string" then tbl2 = {tbl2} end
+    
+    if type(tbl1) ~= "table" or type(tbl2) ~= "table" then
+        return false
     end
 
+    local freq1, freq2 = {}, {}
+    
+    for _, v in ipairs(tbl1) do
+        if type(v) == "string" then
+            local normalized = string.gsub(v, "%s+", " ")
+            normalized = string.gsub(normalized, "^%s*(.-)%s*$", "%1")
+            freq1[normalized] = (freq1[normalized] or 0) + 1
+        else
+            freq1[v] = (freq1[v] or 0) + 1
+        end
+    end
+    
     for _, v in ipairs(tbl2) do
-        freq2[v] = (freq2[v] or 0) + 1
+        if type(v) == "string" then
+            local normalized = string.gsub(v, "%s+", " ")
+            normalized = string.gsub(normalized, "^%s*(.-)%s*$", "%1")
+            freq2[normalized] = (freq2[normalized] or 0) + 1
+        else
+            freq2[v] = (freq2[v] or 0) + 1
+        end
+    end
+    
+    print("Table 1 frequencies:")
+    for k, v in pairs(freq1) do print("  ", k, v) end
+    print("Table 2 frequencies:")
+    for k, v in pairs(freq2) do print("  ", k, v) end
+    
+    print("Table 1:")
+    for i, v in ipairs(tbl1) do
+        print(i, type(v), string.format("%q", tostring(v)))
+    end
+    
+    print("Table 2:")
+    for i, v in ipairs(tbl2) do
+        print(i, type(v), string.format("%q", tostring(v)))
     end
     
     for k, v in pairs(freq1) do
@@ -1570,7 +1604,10 @@ function KerapacCore.WaitForPartyToBeComplete()
         table.insert(partyMembers, string.lower(Data.partyMembers[i]))
     end
     playersInVicinity = KerapacCore.RemoveDuplicates(playersInVicinity)
-    KerapacCore.isTeamComplete = KerapacCore.CheckTables(playersInVicinity, Data.partyMembers)
+    if #playersInVicinity == #Data.partyMembers then
+        KerapacCore.isTeamComplete = true
+    end
+    --KerapacCore.isTeamComplete = KerapacCore.CheckTables(playersInVicinity, Data.partyMembers)
     KerapacCore.log("Found all team members: "..tostring(KerapacCore.isTeamComplete))
     KerapacCore.sleepTickRandom(1)
 end
@@ -1581,9 +1618,11 @@ function KerapacCore.BeginFight()
     KerapacCore.centerOfArenaPosition = FFPOINT.new(KerapacCore.playerPosition.x - 7, KerapacCore.playerPosition.y, 0)
     KerapacCore.startLocationOfArena = FFPOINT.new(KerapacCore.playerPosition.x - 25, KerapacCore.playerPosition.y, 0)
 
-    if API.Container_Get_s(94, 55189) or API.Container_Get_s(94, 52504) then
-        Data.extraAbilities.deathSkullsAbility.threshold = 60
-        KerapacCore.log("Ooo look at you, fancy boy")
+    for i = 1, #API.Container_Get_all(94) do
+        if API.Container_Get_all(94)[i].item_id == 55189 or API.Container_Get_all(94)[i].item_id == 52504 then
+            Data.extraAbilities.deathSkullsAbility.threshold = 60
+            KerapacCore.log("Ooo look at you, fancy boy")
+        end
     end
         
     KerapacCore.log("Reset compass")
