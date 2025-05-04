@@ -307,7 +307,7 @@ end
 function KerapacCore.handleSpecialSummoning()
     if not (API.Get_tick() - KerapacCore.summoningSpecialTicks > 4) then return end
     if not Familiars:HasFamiliar() then return end 
-    if not Familiars:GetSpellPoints() >= Data.summoningPointsForScroll then return end
+    if not (Familiars:GetSpellPoints() >= Data.summoningPointsForScroll) then return end
     if Familiars:GetName() ~= "Hellhound" then return end
     local isHealable = KerapacCore.isFamiliarHpBelowPercentage(API.ScanForInterfaceTest2Get(false, { { 662,0,-1,0 }, { 662,43,-1,0 }, { 662,44,-1,0 }, { 662,64,-1,0 }, { 662,65,-1,0 }, { 662,66,-1,0 }, { 662,66,8,0 } })[1].textids, 70)
     if not isHealable then return end
