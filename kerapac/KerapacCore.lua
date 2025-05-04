@@ -111,7 +111,7 @@ KerapacCore.PassivesDropdown.stringsArr = {}
 
 KerapacCore.StartButton = API.CreateIG_answer()
 KerapacCore.StartButton.box_name = "Start"
-KerapacCore.StartButton.box_start = FFPOINT.new(Data.MARGIN + Data.PADDING_X + 80, Data.BOX_START_Y + Data.PADDING_Y + 40, 0)
+KerapacCore.StartButton.box_start = FFPOINT.new(Data.MARGIN + Data.PADDING_X + 120, Data.BOX_START_Y + Data.PADDING_Y + 40, 0)
 KerapacCore.StartButton.box_size = FFPOINT.new(Data.BUTTON_WIDTH, Data.BUTTON_HEIGHT, 0)
 KerapacCore.StartButton.colour = ImColor.new(0, 255, 0)
 
