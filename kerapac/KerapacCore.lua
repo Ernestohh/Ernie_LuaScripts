@@ -1556,15 +1556,18 @@ function KerapacCore.WaitForPartyToBeComplete()
     KerapacCore.log("Waiting for team to be complete")
     local players = API.GetAllObjArray1({1}, 30, {2})
     local playersInVicinity = {}
+    local partyMembers = {}
     for i = 1, #players do
         local player = players[i]
-        table.insert(playersInVicinity, player.Name)
+        table.insert(playersInVicinity, string.lower(player.Name))
+    end
+    for i = 1, #Data.partyMembers do
+        table.insert(partyMembers, string.lower(Data.partyMembers[i]))
     end
     playersInVicinity = KerapacCore.RemoveDuplicates(playersInVicinity)
     KerapacCore.isTeamComplete = KerapacCore.CheckTables(playersInVicinity, Data.partyMembers)
     KerapacCore.log("Found all team members: "..tostring(KerapacCore.isTeamComplete))
     KerapacCore.sleepTickRandom(1)
-    
 end
 
 function KerapacCore.BeginFight()
