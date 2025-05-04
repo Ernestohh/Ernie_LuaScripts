@@ -33,6 +33,11 @@ local KerapacCore = {
     isPartyLeader = false,
     isSetupFirstInstance = false,
     isTeamComplete = false,
+    isPhase4SetupComplete = false,
+    isClonesSetup = false,
+    isResonanceEnabled = false,
+    isMagePrayEnabled = false,
+    isSoulSplitEnabled = false,
     
     hasOverload = false,
     hasWeaponPoison = false,
@@ -45,7 +50,9 @@ local KerapacCore = {
     hasReflect = false,
     hasImmortality = false,
     hasDebilitate = false,
+    hasBloatDebuff = false,
     hasDevotion = false,
+    canAttack = true,
     
     playerPosition = nil,
     startLocationOfArena = nil,
@@ -53,14 +60,25 @@ local KerapacCore = {
     scripture = nil,
     currentState = nil,
     overheadTable = nil,
-    
+    necrosisStacks = nil,
+    residualSoulsStack = nil,
+    lastAttackTick = nil,
+
+    warpTimeTicks = API.Get_tick(),
+    globalCooldownTicks = API.Get_tick(),
     eatFoodTicks = API.Get_tick(),
     drinkRestoreTicks = API.Get_tick(),
     buffCheckCooldown = API.Get_tick(),
     avoidLightningTicks = API.Get_tick(),
+    phase4Ticks = API.Get_tick(),
+    resonanceTicks = API.Get_tick(),
+    vulnTicks = API.Get_tick(),
+    summoningSpecialTicks = API.Get_tick(),
     lightningDirections = {},
     
     kerapacPhase = 1,
+    kerapacEcho1 = nil,
+    kerapacEcho2 = nil,
     
     Background = nil,
     PassivesDropdown = nil,
@@ -70,7 +88,7 @@ local KerapacCore = {
     partyLeaderCheckBox = nil,
 
     selectedPrayerType = API.VB_FindPSettinOrder(3277, 0).state & 1,
-    selectedPassive = nil
+    selectedPassive = nil,
 }
 
 for key in pairs(Data.passiveBuffs) do
@@ -245,6 +263,46 @@ function KerapacCore.whichFamiliar()
     return familiar
 end
 
+
+function KerapacCore.isFamiliarHpBelowPercentage(hpString, percentage)
+    if not hpString or type(hpString) ~= "string" then
+        return nil
+    end
+     if not percentage or type(percentage) ~= "number" or percentage < 0 then
+        return nil
+    end
+
+    local currentHpStr, maxHpStr = string.match(hpString, "^([^/]+)/([^/]+)$")
+
+    if not currentHpStr then
+        hpString = hpString:match("^%s*(.-)%s*$")
+        if hpString then
+             currentHpStr, maxHpStr = string.match(hpString, "^([^/]+)/([^/]+)$")
+        end
+        if not currentHpStr then
+             return nil
+        end
+    end
+
+    currentHpStr = string.gsub(currentHpStr, ",", "")
+    maxHpStr = string.gsub(maxHpStr, ",", "")
+
+    local currentHp = tonumber(currentHpStr)
+    local maxHp = tonumber(maxHpStr)
+
+    if not currentHp or not maxHp then
+        return nil
+    end
+    if maxHp <= 0 then
+        return nil
+    end
+
+    local thresholdValue = maxHp * (percentage / 100.0)
+    local isBelow = currentHp < thresholdValue
+
+    return isBelow
+end
+
 function KerapacCore.getKerapacInformation()
     return API.FindNPCbyName("Kerapac, the bound", 30)
 end
@@ -260,7 +318,7 @@ end
 function KerapacCore.getKerapacPositionFFPOINT()
     local kerapacInfo = KerapacCore.getKerapacInformation()
     if kerapacInfo then
-        return FFPOINT.new(kerapacInfo.Tile_XYZ.x, kerapacInfo.Tile_XYZ.y, 0)
+        return FFPOINT.new(kerapacInfo.Tile_XYZ.x, kerapacInfo.Tile_XYZ.y, kerapacInfo.Tile_XYZ.z)
     end
     return nil
 end
@@ -325,12 +383,9 @@ function KerapacCore.getBossStateFromAnimation(animation)
     end
     return nil
 end
-
 function KerapacCore.enableMagePray()
-    if API.Buffbar_GetIDstatus(Data.extraAbilities.splitSoulAbility.buffId).found and API.GetPrayPrecent() > 0 then 
-        KerapacCore.log("splitsoul active")
-        return 
-    end
+    if API.Buffbar_GetIDstatus(Data.extraAbilities.splitSoulAbility.buffId).found then return end
+    if API.GetPrayPrecent() <= 0 or KerapacCore.magePrayEnabled then return end
     
     local overheadTable = nil
     if KerapacCore.selectedPrayerType == "Prayers" then
@@ -350,6 +405,8 @@ function KerapacCore.enableMagePray()
         if not API.Buffbar_GetIDstatus(buffId).found and ability.id ~= 0 then
             KerapacCore.log("Activate " .. selectedOverheadData.name)
             API.DoAction_Ability_Direct(ability, 1, API.OFF_ACT_GeneralInterface_route)
+            KerapacCore.isMagePrayEnabled = true
+            KerapacCore.isSoulSplitEnabled = false
         end
     else
         KerapacCore.log("No valid overhead prayer selected or data not found.")
@@ -358,6 +415,7 @@ end
 
 function KerapacCore.enableMeleePray()
     if API.Buffbar_GetIDstatus(Data.extraAbilities.splitSoulAbility.buffId).found then return end
+    if API.GetPrayPrecent() <= 0 then return end
     
     local overheadTable = nil
     if KerapacCore.selectedPrayerType == "Prayers" then
@@ -377,6 +435,8 @@ function KerapacCore.enableMeleePray()
         if not API.Buffbar_GetIDstatus(buffId).found and ability.id ~= 0 then
             KerapacCore.log("Activate " .. selectedOverheadData.name)
             API.DoAction_Ability_Direct(ability, 1, API.OFF_ACT_GeneralInterface_route)
+            KerapacCore.isMagePrayEnabled = false
+            KerapacCore.isSoulSplitEnabled = false
         end
     else
         KerapacCore.log("No valid overhead prayer selected or data not found.")
@@ -384,6 +444,8 @@ function KerapacCore.enableMeleePray()
 end
 
 function KerapacCore.enableSoulSplit()
+    if API.GetPrayPrecent() <= 0 then return end
+    if KerapacCore.isSoulSplitEnabled then return end
     local overheadTable = nil
     if KerapacCore.selectedPrayerType == "Curses" then
         overheadTable = Data.overheadCursesBuffs
@@ -400,6 +462,8 @@ function KerapacCore.enableSoulSplit()
         if not API.Buffbar_GetIDstatus(buffId).found and ability.id ~= 0 then
             KerapacCore.log("Activate " .. selectedOverheadData.name)
             API.DoAction_Ability_Direct(ability, 1, API.OFF_ACT_GeneralInterface_route)
+            KerapacCore.isMagePrayEnabled = false
+            KerapacCore.isSoulSplitEnabled = true
         end
     else
         KerapacCore.log("No valid overhead prayer selected or data not found.")
@@ -423,6 +487,8 @@ function KerapacCore.disableSoulSplit()
         if API.Buffbar_GetIDstatus(buffId).found and ability.id ~= 0 then
             KerapacCore.log("Deactivate " .. selectedOverheadData.name)
             API.DoAction_Ability_Direct(ability, 1, API.OFF_ACT_GeneralInterface_route)
+            KerapacCore.isMagePrayEnabled = false
+            KerapacCore.isSoulSplitEnabled = false
         end
     else
         KerapacCore.log("No valid overhead prayer selected or data not found.")
@@ -448,6 +514,8 @@ function KerapacCore.disableMagePray()
         if API.Buffbar_GetIDstatus(buffId).found and ability.id ~= 0 then
             KerapacCore.log("Deactivate " .. selectedOverheadData.name)
             API.DoAction_Ability_Direct(ability, 1, API.OFF_ACT_GeneralInterface_route)
+            KerapacCore.isMagePrayEnabled = false
+            KerapacCore.isSoulSplitEnabled = false
         end
     else
         KerapacCore.log("No valid overhead prayer selected or data not found.")
@@ -499,7 +567,6 @@ function KerapacCore.disablePassivePrayer()
         if API.Buffbar_GetIDstatus(buffId).found and ability.id ~= 0 then
             KerapacCore.log("Deactivate " .. KerapacCore.selectedPassive)
             API.DoAction_Ability_Direct(ability, 1, API.OFF_ACT_GeneralInterface_route)
-            KerapacCore.sleepTickRandom(2)
         end
     else
         KerapacCore.log("No valid passive prayer selected or data not found.")
@@ -507,70 +574,48 @@ function KerapacCore.disablePassivePrayer()
 end
 
 function KerapacCore.useDarkness()
-    if Data.extraAbilities.darknessAbility.AB.id > 0 and
-        Data.extraAbilities.darknessAbility.AB.enabled and 
-        not API.Buffbar_GetIDstatus(Data.extraAbilities.darknessAbility.buffId).found then
-        API.DoAction_Ability_check(Data.extraAbilities.darknessAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
-        KerapacCore.log("Concealing myself in the shadows")
-        KerapacCore.sleepTickRandom(2)
-    end
+    API.DoAction_Ability_check(Data.extraAbilities.darknessAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+    KerapacCore.log("Concealing myself in the shadows")
 end
 
 function KerapacCore.useInvokeDeath()
-    if  KerapacCore.hasInvokeDeath and
-        not KerapacCore.hasMarkOfDeath() and
-        not KerapacCore.hasDeathInvocation() and 
-        KerapacCore.getKerapacInformation().Life > 15000 then
-        API.DoAction_Ability_check(Data.extraAbilities.invokeDeathAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
-        KerapacCore.log("Die die die")
-        KerapacCore.sleepTickRandom(2)
-    end
+    API.DoAction_Ability_check(Data.extraAbilities.invokeDeathAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+    KerapacCore.log("Die die die")
 end
 
 function KerapacCore.useSplitSoul()
-    if Data.extraAbilities.splitSoulAbility.AB.id > 0 and
-        Data.extraAbilities.splitSoulAbility.AB.enabled and 
-        not API.Buffbar_GetIDstatus(Data.extraAbilities.splitSoulAbility.buffId).found then
-        API.DoAction_Ability_check(Data.extraAbilities.splitSoulAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
-        KerapacCore.log("Splitting Souls")
+    API.DoAction_Ability_check(Data.extraAbilities.splitSoulAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+        KerapacCore.log("Split my soul into pieces, this is my last resort")
         KerapacCore.enableSoulSplit()
-    end
 end
 
 function KerapacCore.useDevotionAbility()
-    if  KerapacCore.hasDevotion and
-        API.GetAdrenalineFromInterface() >= Data.extraAbilities.devotionAbility.threshold and 
-        not API.Buffbar_GetIDstatus(Data.extraAbilities.devotionAbility.buffId).found and 
-        not API.Buffbar_GetIDstatus(Data.extraAbilities.splitSoulAbility.buffId).found then
-            if API.DoAction_Ability_check(Data.extraAbilities.devotionAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true) then
-                KerapacCore.log("Please protect me")
-            end
-    end
+    API.DoAction_Ability_check(Data.extraAbilities.devotionAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+    KerapacCore.log("Please protect me")
 end
 
 function KerapacCore.useReflectAbility()
-    if  KerapacCore.hasReflect and
-        API.GetAdrenalineFromInterface() >= Data.extraAbilities.reflectAbility.threshold and 
-        not API.Buffbar_GetIDstatus(Data.extraAbilities.reflectAbility.buffId).found then
-            if API.DoAction_Ability_check(Data.extraAbilities.reflectAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true) then
-                KerapacCore.log("Reflecting")
-            end
-    end
+    API.DoAction_Ability_check(Data.extraAbilities.reflectAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+    KerapacCore.log("Reflecting on life right now")
 end
 
 function KerapacCore.useImmortalityAbility()
-    if  KerapacCore.hasImmortality and
-        API.GetAdrenalineFromInterface() >= Data.extraAbilities.immortalityAbility.threshold and 
-        not API.Buffbar_GetIDstatus(Data.extraAbilities.immortalityAbility.buffId).found then
-            if API.DoAction_Ability_check(Data.extraAbilities.immortalityAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true) then
-                KerapacCore.log("Becoming immortal")
-            end
-    end
+    API.DoAction_Ability_check(Data.extraAbilities.immortalityAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+    KerapacCore.log("Kill me, I dare you")
+end
+
+function KerapacCore.useResonanceAbility()
+    API.DoAction_Ability_check(Data.extraAbilities.resonanceAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+    KerapacCore.log("Resonate with me")
+end
+
+function KerapacCore.usePreparationAbility()
+    API.DoAction_Ability_check(Data.extraAbilities.preparationAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+    KerapacCore.log("Preparing to kill you")
 end
 
 function KerapacCore.useDebilitateAbility()
-    if  KerapacCore.hasDebilitate and
-        API.GetAdrenalineFromInterface() >= Data.extraAbilities.debilitateAbility.threshold then
+    if  KerapacCore.hasDebilitate then
         local hasDebilitateDebuff = false
         for _,value in ipairs(API.ReadTargetInfo(true).Buff_stack) do
             if value == Data.extraAbilities.debilitateAbility.debuffId then
@@ -594,11 +639,104 @@ function KerapacCore.useFreedomAbility()
     end
 end
 
+function KerapacCore.useLivingDeathAbility()
+    API.DoAction_Ability_check(Data.extraAbilities.livingDeathAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+    KerapacCore.log("Living the Death")
+end
+
+function KerapacCore.useDeathSkullsAbility()
+    API.DoAction_Ability_check(Data.extraAbilities.deathSkullsAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+    KerapacCore.log("Catch these skulls sucker")
+end
+
+function KerapacCore.useFingerOfDeathAbility()
+    API.DoAction_Ability_check(Data.extraAbilities.fingerOfDeathAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+    KerapacCore.log("Fingering Death right now")
+end
+
+function KerapacCore.useBloatAbility()
+    API.DoAction_Ability_check(Data.extraAbilities.bloatAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+    KerapacCore.log("I'm not fat, just bloated")
+end
+
+function KerapacCore.useVolleyOfSoulsAbility()
+    API.DoAction_Ability_check(Data.extraAbilities.volleyOfSoulsAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+    KerapacCore.log("Exorcising these souls out of me")
+end
+
+function KerapacCore.useTouchOfDeathAbility()
+    API.DoAction_Ability_check(Data.extraAbilities.touchOfDeathAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+    KerapacCore.log("Touching Death inappropriately")
+end
+
+function KerapacCore.useSoulSapAbility()
+    API.DoAction_Ability_check(Data.extraAbilities.soulSapAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+    KerapacCore.log("Sapping your soul")
+end
+
+function KerapacCore.useSacrificeAbility()
+    API.DoAction_Ability_check(Data.extraAbilities.sacrificeAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+    KerapacCore.log("Sacrifice your life to me")
+end
+
+function KerapacCore.useConjureUndeadArmy()
+    API.DoAction_Ability_check(Data.extraAbilities.conjureUndeadArmyAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+    KerapacCore.log("Conjuring up my harem")
+end
+
+function KerapacCore.useConjureSkeletonWarrior()
+    API.DoAction_Ability_check(Data.extraAbilities.conjureSkeletonWarriorAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+    KerapacCore.log("Conjuring up my Skelebro")
+end
+
+function KerapacCore.useConjureVengefulGhost()
+    API.DoAction_Ability_check(Data.extraAbilities.conjureVengefulGhostAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+    KerapacCore.log("Conjuring up Casper the Ghost")
+end
+
+function KerapacCore.useConjurePutridZombie()
+    API.DoAction_Ability_check(Data.extraAbilities.conjurePutridZombieAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+    KerapacCore.log("Conjuring up your Mom")
+end
+
+function KerapacCore.useCommandSkeletonWarrior()
+    API.DoAction_Ability_check(Data.extraAbilities.commandSkeletonWarriorAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+    KerapacCore.log("Commanding my Skelebro to slay")
+end
+
+function KerapacCore.useCommandVengefulGhost()
+    API.DoAction_Ability_check(Data.extraAbilities.commandVengefulGhostAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+    KerapacCore.log("Commanding Casper to haunt the target")
+    KerapacCore.sleepTickRandom(1)
+end
+
+function KerapacCore.applyVulnerability()
+    if not Inventory:Contains("Vulnerability bomb") and not API.GetABs_name1("Vulnerability bomb").enabled then return end
+    if API.ReadTargetInfo().Target_Name ~= "Kerapac, the bound" and API.ReadTargetInfo().Target_Name ~= "Echo of Kerapac" then return end
+    if not (API.Get_tick() - KerapacCore.vulnTicks > 12) then return end
+    local hasVuln = false
+    for _,value in ipairs(API.ReadTargetInfo(true).Buff_stack) do
+        if value == 14395 then
+            hasVuln = true
+        end
+    end
+    local vulnAB = API.GetABs_name1("Vulnerability bomb")
+    if not hasVuln then
+        API.DoAction_Ability_Direct(vulnAB, 1, API.OFF_ACT_GeneralInterface_route)
+        if(API.ReadTargetInfo().Target_Name == "Kerapac, the bound") then
+            KerapacCore.attackKerapac()
+        end
+        KerapacCore.log("Found your tickle spot")
+    end
+    
+    KerapacCore.vulnTicks = API.Get_tick()
+end
+
 function KerapacCore.checkForStun()
     if API.DeBuffbar_GetIDstatus(Data.stun).found then
         KerapacCore.log("I am stunned")
         KerapacCore.useFreedomAbility()
-        API.DoAction_Tile(KerapacCore.centerOfArenaPosition)
+        API.DoAction_TileF(KerapacCore.centerOfArenaPosition)
         KerapacCore.sleepTickRandom(2)
     end
 end
@@ -606,7 +744,8 @@ end
 function KerapacCore.eatFood()
     if not Inventory:ContainsAny(Data.foodItems) and 
        not Inventory:ContainsAny(Data.emergencyDrinkItems) and 
-       not Inventory:ContainsAny(Data.emergencyFoodItems) or 
+       not Inventory:ContainsAny(Data.emergencyFoodItems) and 
+       not API.Buffbar_GetIDstatus(Data.extraAbilities.immortalityAbility.buffId).found or
        API.GetHPrecent() >= Data.hpThreshold or 
        API.Get_tick() - KerapacCore.eatFoodTicks <= Data.foodCooldown then 
         return 
@@ -615,16 +754,32 @@ function KerapacCore.eatFood()
     local hasFood = Inventory:ContainsAny(Data.foodItems)
     local hasEmergencyFood = Inventory:ContainsAny(Data.emergencyFoodItems)
     local hasEmergencyDrink = Inventory:ContainsAny(Data.emergencyDrinkItems)
-
+    local emergencyFoodAB = nil
+    local emergencyDrinkAB = nil
+    local eatFoodAB = API.GetABs_name1("Eat Food")
+    if(string.find(string.lower(KerapacCore.whichEmergencyFood()), "blue blubber")) then
+        emergencyFoodAB = API.GetABs_name1("Blue blubber jellyfish")
+    elseif(string.find(string.lower(KerapacCore.whichEmergencyFood()), "green blubber")) then
+        emergencyFoodAB = API.GetABs_name1("Green blubber jellyfish")
+    end
+    if string.find(string.lower(KerapacCore.whichEmergencyDrink()), "super guthix") then
+        emergencyDrinkAB = API.GetABs_name1("Super Guthix rest")
+    elseif string.find(string.lower(KerapacCore.whichEmergencyDrink()), "guthix")  then
+        emergencyDrinkAB = API.GetABs_name1("Guthix rest")
+    elseif string.find(string.lower(KerapacCore.whichEmergencyDrink()), "super saradomin")  then
+        emergencyDrinkAB = API.GetABs_name1("Super Saradomin brew")
+    elseif string.find(string.lower(KerapacCore.whichEmergencyDrink()), "saradomin")  then
+        emergencyDrinkAB = API.GetABs_name1("Saradomin brew")
+    end
     if API.GetHPrecent() <= Data.emergencyEatThreshold then
         if hasFood then
-            Inventory:Eat(KerapacCore.whichFood())
+            API.DoAction_Ability_Direct(eatFoodAB, 1, API.OFF_ACT_GeneralInterface_route)
         end
-        if hasEmergencyFood then
-            Inventory:Eat(KerapacCore.whichEmergencyFood())
+        if hasEmergencyFood and emergencyFoodAB ~= nil then
+            API.DoAction_Ability_Direct(emergencyFoodAB, 1, API.OFF_ACT_GeneralInterface_route)
         end
-        if hasEmergencyDrink then
-            Inventory:Eat(KerapacCore.whichEmergencyDrink())
+        if hasEmergencyDrink and emergencyDrinkAB ~= nil then
+            API.DoAction_Ability_Direct(emergencyDrinkAB, 1, API.OFF_ACT_GeneralInterface_route)
         end
         if Inventory:Contains("Enhanced Excalibur") and
            not API.DeBuffbar_GetIDstatus(Data.extraItems.excalibur, false).found then
@@ -637,15 +792,15 @@ function KerapacCore.eatFood()
         KerapacCore.eatFoodTicks = API.Get_tick()
     else
         if hasFood then
-            Inventory:Eat(KerapacCore.whichFood())
+            API.DoAction_Ability_Direct(eatFoodAB, 1, API.OFF_ACT_GeneralInterface_route)
             KerapacCore.log("Eating some food")
             KerapacCore.eatFoodTicks = API.Get_tick()
-        elseif hasEmergencyFood then
-            Inventory:Eat(KerapacCore.whichEmergencyFood())
+        elseif hasEmergencyFood and emergencyFoodAB ~= nil then
+            API.DoAction_Ability_Direct(emergencyFoodAB, 1, API.OFF_ACT_GeneralInterface_route)
             KerapacCore.log("Eating some food")
             KerapacCore.eatFoodTicks = API.Get_tick()
-        elseif hasEmergencyDrink then
-            Inventory:Eat(KerapacCore.whichEmergencyDrink())
+        elseif hasEmergencyDrink and emergencyDrinkAB ~= nil then
+            API.DoAction_Ability_Direct(emergencyDrinkAB, 1, API.OFF_ACT_GeneralInterface_route)
             KerapacCore.log("Eating some food")
             KerapacCore.eatFoodTicks = API.Get_tick()
         end
@@ -656,8 +811,19 @@ function KerapacCore.drinkPrayer()
     if not Inventory:ContainsAny(Data.prayerRestoreItems) or 
     API.GetPrayPrecent() >= Data.prayerThreshold or 
     API.Get_tick() - KerapacCore.drinkRestoreTicks <= Data.drinkCooldown then return end
-    
-    Inventory:Eat(KerapacCore.whichPrayerRestore())
+
+    local prayerAB = nil
+    if string.find(KerapacCore.whichPrayerRestore(), "Prayer") then
+        prayerAB = API.GetABs_name1("Prayer potion")
+    elseif string.find(KerapacCore.whichPrayerRestore(), "Super prayer")  then
+        prayerAB = API.GetABs_name1("Super prayer potion")
+    elseif string.find(KerapacCore.whichPrayerRestore(), "Extreme prayer")  then
+        prayerAB = API.GetABs_name1("Extreme prayer potion")
+    elseif string.find(KerapacCore.whichPrayerRestore(), "Super restore")  then
+        prayerAB = API.GetABs_name1("Super restore potion")
+    end
+
+    API.DoAction_Ability_Direct(prayerAB, 1, API.OFF_ACT_GeneralInterface_route)
     KerapacCore.log("Slurping on a prayer potion")
     KerapacCore.drinkRestoreTicks = API.Get_tick()
 end
@@ -668,8 +834,31 @@ function KerapacCore.drinkOverload()
     API.Buffbar_GetIDstatus(Data.overloadBuff.Overload.buffId).found or
     API.Buffbar_GetIDstatus(Data.overloadBuff.SupremeOverload.buffId).found or
     API.Get_tick() - KerapacCore.drinkRestoreTicks <= Data.drinkCooldown then return end
-    
-    Inventory:Eat(KerapacCore.whichOverload())
+
+    local overloadAB = nil
+    if string.find(KerapacCore.whichOverload(), "Overload") then
+        overloadAB = API.GetABs_name1("Overload potion")
+    elseif string.find(KerapacCore.whichOverload(), "Holy overload")  then
+        overloadAB = API.GetABs_name1("Holy overload potion")
+    elseif string.find(KerapacCore.whichOverload(), "Searing overload")  then
+        overloadAB = API.GetABs_name1("Searing overload potion")
+    elseif string.find(KerapacCore.whichOverload(), "Overload salve")  then
+        overloadAB = API.GetABs_name1("Overload salve")
+    elseif string.find(KerapacCore.whichOverload(), "Aggroverload")  then
+        overloadAB = API.GetABs_name1("Aggroverload")
+    elseif string.find(KerapacCore.whichOverload(), "Holy aggroverload")  then
+        overloadAB = API.GetABs_name1("Holy aggroverload")
+    elseif string.find(KerapacCore.whichOverload(), "Supreme overload salve")  then
+        overloadAB = API.GetABs_name1("Supreme overload salve")
+    elseif string.find(KerapacCore.whichOverload(), "Elder overload salve")  then
+        overloadAB = API.GetABs_name1("Elder overload salve")
+    elseif string.find(KerapacCore.whichOverload(), "Supreme overload potion")  then
+        overloadAB = API.GetABs_name1("Supreme overload potion")
+    elseif string.find(KerapacCore.whichOverload(), "Elder overload potion")  then
+        overloadAB = API.GetABs_name1("Elder overload potion")
+    end
+
+    API.DoAction_Ability_Direct(overloadAB, 1, API.OFF_ACT_GeneralInterface_route)
     KerapacCore.log("Slurping an overload")
     KerapacCore.drinkRestoreTicks = API.Get_tick()
 end
@@ -678,8 +867,22 @@ function KerapacCore.drinkWeaponPoison()
     if not Inventory:ContainsAny(Data.weaponPoisonItems) or 
     API.Buffbar_GetIDstatus(Data.weaponPoisonBuff).found or
     API.Get_tick() - KerapacCore.drinkRestoreTicks <= Data.drinkCooldown then return end
+
+    local weaponPoisonAB = nil
+    local items = {
+        "Weapon Poison",
+        "Weapon Poison++",
+        "Weapon Poison+++"
+    }
     
-    Inventory:DoAction(KerapacCore.whichWeaponPoison(), 1, API.OFF_ACT_GeneralInterface_route)
+    for i = 1, #items, 1 do
+        local ab = items[i]
+        local ability = API.GetABs_name(ab,true)
+        if(ability.enabled)then
+        weaponPoisonAB = ability
+        end
+    end
+    API.DoAction_Ability_Direct(weaponPoisonAB, 1, API.OFF_ACT_GeneralInterface_route)
     KerapacCore.log("Slurping a weapon poison")
     KerapacCore.drinkRestoreTicks = API.Get_tick()
 end
@@ -704,8 +907,7 @@ function KerapacCore.hasScripture()
 end
 
 function KerapacCore.enableScripture(book)
-    if book.AB.id > 0 and
-    book.AB.enabled and 
+    if book.AB.enabled and 
     not API.Buffbar_GetIDstatus(book.itemId).found then
         API.DoAction_Ability_check(book.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
         KerapacCore.log("Enabling Scripture")
@@ -714,7 +916,346 @@ function KerapacCore.enableScripture(book)
     end
 end
 
+function KerapacCore.useWarpTime()
+    initAbilities()
+    if not (API.Get_tick() - KerapacCore.warpTimeTicks > 64) then return end 
+    if not (Data.extraAbilities.livingDeathAbility.AB.cooldown_timer <= 0)
+    and not (API.GetAddreline_() > 99) then return end
+    API.DoAction_Interface(0x2e,0xffffffff,1,743,1,-1,API.OFF_ACT_GeneralInterface_route)
+    KerapacCore.log("Ultra Instinct mode Tu du tu du du du tu du..")
+    KerapacCore.warpTimeTicks = API.Get_tick()
+end
+
+function KerapacCore.setupPlayerTank(clones)
+    if KerapacCore.isPartyLeader or not KerapacCore.isInParty then 
+        API.DoAction_Dive_Tile(KerapacCore.kerapacEcho2)
+        KerapacCore.sleepTickRandom(5)
+        API.DoAction_NPC(0x2a, API.OFF_ACT_InteractNPC_route, { clones[1].Id }, 10)
+        KerapacCore.sleepTickRandom(3)
+        Inventory:Eat("Powerburst of vitality")
+        KerapacCore.sleepTickRandom(1)
+        API.DoAction_NPC(0x2a, API.OFF_ACT_InteractNPC_route, { clones[1].Id }, 50)
+    end
+end
+
+function KerapacCore.setupEchoLocations()
+    KerapacCore.kerapacEcho1 = WPOINT.new(math.floor(KerapacCore.centerOfArenaPosition.x), math.floor(KerapacCore.centerOfArenaPosition.y + 9), math.floor(KerapacCore.centerOfArenaPosition.z))
+    KerapacCore.kerapacEcho2 = WPOINT.new(math.floor(KerapacCore.centerOfArenaPosition.x), math.floor(KerapacCore.centerOfArenaPosition.y - 9), math.floor(KerapacCore.centerOfArenaPosition.z))
+end
+
+function KerapacCore.hardModePhase4Setup()
+    if(KerapacCore.isPhase4SetupComplete)then return end
+    KerapacCore.sleepTickRandom(3)
+    local clones = API.GetAllObjArray1({Data.playerClone}, 60, {1})
+    local echoes = API.GetAllObjArray1({Data.kerapacClones}, 60, {1})
+    if not (#clones > 0) and not (#echoes > 0) then return end
+    KerapacCore.isPhasing = false
+    KerapacCore.enableMagePray()
+    KerapacCore.setupEchoLocations()
+    KerapacCore.setupPlayerTank(clones)
+    KerapacCore.isPhase4SetupComplete = true
+end
+
+function KerapacCore.HandlePhase4()
+    if not (API.Get_tick() - KerapacCore.phase4Ticks > 1) then return end
+    local surgeAB = API.GetABs_name("Surge")
+    local echoes = API.GetAllObjArray1({Data.kerapacClones}, 100, {1})
+    local killableEchoes = {}
+    for i = 1, #echoes do
+        if echoes[i].Anim ~= 33493 
+        and echoes[i].Anim ~= Data.bossStateEnum.JUMP_ATTACK_COMMENCE
+        and echoes[i].Anim ~= Data.bossStateEnum.JUMP_ATTACK_IN_AIR
+        and echoes[i].Anim ~= Data.bossStateEnum.JUMP_ATTACK_LANDED then
+            table.insert(killableEchoes, echoes[i])
+        end
+    end
+    local targetInfo = API.ReadTargetInfo()
+
+    if #killableEchoes == 3 and targetInfo.Target_Name ~= "Echo of Kerapac" then
+        API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { killableEchoes[1].Id }, 10)
+    elseif #killableEchoes == 2 and targetInfo.Hitpoints == 100000 then
+        KerapacCore.log("amount of killable echoes "..#killableEchoes)
+        API.DoAction_Tile(KerapacCore.kerapacEcho1)
+        KerapacCore.sleepTickRandom(2)
+        API.DoAction_Ability_Direct(surgeAB, 1, API.OFF_ACT_GeneralInterface_route)
+        API.DoAction_Tile(KerapacCore.kerapacEcho1)
+        KerapacCore.sleepTickRandom(1)
+        API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { killableEchoes[1].Id }, 10)
+    elseif #killableEchoes == 1 and targetInfo.Hitpoints == 100000 then
+        KerapacCore.log("amount of killable echoes "..#killableEchoes)
+        API.DoAction_Tile(KerapacCore.kerapacEcho2)
+        KerapacCore.sleepTickRandom(2)
+        API.DoAction_Ability_Direct(surgeAB, 1, API.OFF_ACT_GeneralInterface_route)
+        API.DoAction_Tile(KerapacCore.kerapacEcho2)
+        KerapacCore.sleepTickRandom(1)
+        API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { killableEchoes[1].Id }, 10)
+    elseif #killableEchoes == 0 then
+        KerapacCore.log("amount of killable echoes "..#killableEchoes)
+        KerapacCore.attackKerapac()
+    end
+
+    if(#killableEchoes > 0) then
+        KerapacCore.applyVulnerability()
+        API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { killableEchoes[1].Id }, 10)
+    end
+
+    KerapacCore.phase4Ticks = API.Get_tick()
+end
+
+function KerapacCore.castNextAbility()
+    initAbilities()
+    local attackTick = API.VB_FindPSettinOrder(4501).state
+    if attackTick == KerapacCore.lastAttackTick then return end
+    if not (API.Get_tick() - KerapacCore.globalCooldownTicks > 2) then return end
+    if not KerapacCore.canAttack then return end
+    KerapacCore.hasBloatDebuff = false
+    KerapacCore.necrosisStacks = API.VB_FindPSettinOrder(10986).state
+    KerapacCore.residualSoulsStack = API.VB_FindPSettinOrder(11035).state
+    KerapacCore.lastAttackTick = attackTick
+    KerapacCore.globalCooldownTicks = API.Get_tick()
+
+    if Data.extraAbilities.conjureUndeadArmyAbility.AB.enabled and API.VB_FindPSettinOrder(10994).state < 1 and API.VB_FindPSettinOrder(11018).state < 1 and API.VB_FindPSettinOrder(11006).state < 1 then
+        KerapacCore.useConjureUndeadArmy()
+        return
+    end
+
+    if Data.extraAbilities.conjureSkeletonWarriorAbility.AB.enabled and API.VB_FindPSettinOrder(10994).state < 1 then
+        KerapacCore.useConjureSkeletonWarrior()
+        return
+    end
+
+    if Data.extraAbilities.conjureVengefulGhostAbility.AB.enabled and API.VB_FindPSettinOrder(11018).state < 1 then
+        KerapacCore.useConjureVengefulGhost()
+        return
+    end
+
+    if Data.extraAbilities.conjurePutridZombieAbility.AB.enabled and API.VB_FindPSettinOrder(11006).state < 1 then
+        KerapacCore.useConjurePutridZombie()
+        return
+    end
+
+    if Data.extraAbilities.darknessAbility.AB.cooldown_timer <= 0 and not API.Buffbar_GetIDstatus(Data.extraAbilities.darknessAbility.buffId).found and KerapacCore.hasDarkness then
+        KerapacCore.useDarkness()
+    end
+
+    if Data.extraAbilities.invokeDeathAbility.AB.cooldown_timer <= 0 and not KerapacCore.hasDeathInvocation() and not KerapacCore.hasMarkOfDeath() and KerapacCore.hasDeathInvocation then
+        KerapacCore.useInvokeDeath()
+    end
+
+    if (KerapacCore.kerapacPhase < 3) and Data.extraAbilities.splitSoulAbility.AB.cooldown_timer <= 0 and Data.extraAbilities.splitSoulAbility.AB.id > 0 and Data.extraAbilities.splitSoulAbility.AB.enabled and not API.Buffbar_GetIDstatus(Data.extraAbilities.splitSoulAbility.buffId).found then
+        KerapacCore.useSplitSoul()
+    end
+    if Data.extraAbilities.commandSkeletonWarriorAbility.AB.cooldown_timer <= 0 and Data.extraAbilities.commandSkeletonWarriorAbility.AB.enabled then
+        KerapacCore.useCommandSkeletonWarrior()
+        return
+    end
+
+    if Data.extraAbilities.commandVengefulGhostAbility.AB.cooldown_timer <= 0 and Data.extraAbilities.commandVengefulGhostAbility.AB.enabled then
+        KerapacCore.useCommandVengefulGhost()
+        return
+    end
+
+    if Data.extraAbilities.livingDeathAbility.AB.cooldown_timer <= 0 and API.GetAddreline_() > 99 and not KerapacCore.isPhasing then
+        if KerapacCore.kerapacPhase >= 4 and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
+            if API.GetHPrecent() > 70 then
+                KerapacCore.useWarpTime()
+            else
+                local oldThreshold = Data.emergencyEatThreshold
+                Data.emergencyEatThreshold = API.GetHPrecent()+10
+                KerapacCore.eatFood()
+                Data.emergencyEatThreshold = oldThreshold
+                KerapacCore.useWarpTime()
+            end
+        end
+        KerapacCore.useLivingDeathAbility()
+        return
+    end
+
+    if Data.extraAbilities.immortalityAbility.AB.cooldown_timer <= 0 
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.debilitateAbility.debuffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.reflectAbility.buffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.devotionAbility.buffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.immortalityAbility.buffId).found
+    and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_COMMENCE
+    and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_IN_AIR
+    and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_LANDED
+    and not KerapacCore.islightningPhase
+    and not KerapacCore.isPhasing
+    and KerapacCore.kerapacPhase >= 4
+    and API.GetAddreline_() > 99 then
+        if KerapacCore.kerapacPhase >= 4 and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
+            if API.GetHPrecent() > 70 then
+                KerapacCore.useWarpTime()
+            else
+                local oldThreshold = Data.emergencyEatThreshold
+                Data.emergencyEatThreshold = API.GetHPrecent()+10
+                KerapacCore.eatFood()
+                Data.emergencyEatThreshold = oldThreshold
+                KerapacCore.useWarpTime()
+            end
+        end
+        KerapacCore.useImmortalityAbility()
+        return
+    end
+
+    if Data.extraAbilities.deathSkullsAbility.AB.cooldown_timer <= 0 and API.GetAddreline_() > 99 and not KerapacCore.isPhasing then
+        if KerapacCore.kerapacPhase >= 4 and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
+            if API.GetHPrecent() > 70 then
+                KerapacCore.useWarpTime()
+            else
+                local oldThreshold = Data.emergencyEatThreshold
+                Data.emergencyEatThreshold = API.GetHPrecent()+10
+                KerapacCore.eatFood()
+                Data.emergencyEatThreshold = oldThreshold
+                KerapacCore.useWarpTime()
+            end
+        end
+        KerapacCore.useDeathSkullsAbility()
+        return
+    end
+
+    if Data.extraAbilities.devotionAbility.AB.cooldown_timer <= 0 
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.debilitateAbility.debuffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.reflectAbility.buffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.devotionAbility.buffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.immortalityAbility.buffId).found
+    and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_COMMENCE
+    and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_IN_AIR
+    and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_LANDED
+    and not KerapacCore.islightningPhase
+    and not KerapacCore.isPhasing
+    and API.GetAddreline_() > 50 then
+        if KerapacCore.kerapacPhase >= 4 and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
+            if API.GetHPrecent() > 70 then
+                KerapacCore.useWarpTime()
+            else
+                local oldThreshold = Data.emergencyEatThreshold
+                Data.emergencyEatThreshold = API.GetHPrecent()+10
+                KerapacCore.eatFood()
+                Data.emergencyEatThreshold = oldThreshold
+                KerapacCore.useWarpTime()
+            end
+        end
+        KerapacCore.useDevotionAbility()
+        return
+    end
+    if Data.extraAbilities.debilitateAbility.AB.cooldown_timer <= 0 
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.debilitateAbility.debuffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.reflectAbility.buffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.devotionAbility.buffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.immortalityAbility.buffId).found
+    and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_COMMENCE
+    and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_IN_AIR
+    and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_LANDED
+    and not KerapacCore.isPhasing
+    and API.GetAddreline_() > 50 then
+        if KerapacCore.kerapacPhase >= 4 and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
+            if API.GetHPrecent() > 70 then
+                KerapacCore.useWarpTime()
+            else
+                local oldThreshold = Data.emergencyEatThreshold
+                Data.emergencyEatThreshold = API.GetHPrecent()+10
+                KerapacCore.eatFood()
+                Data.emergencyEatThreshold = oldThreshold
+                KerapacCore.useWarpTime()
+            end
+        elseif KerapacCore.islightningPhase then
+            KerapacCore.useDebilitateAbility()
+            return 
+        end
+    end
+
+    if Data.extraAbilities.reflectAbility.AB.cooldown_timer <= 0 
+    and API.GetAddreline_() > 50 
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.debilitateAbility.debuffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.reflectAbility.buffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.devotionAbility.buffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.immortalityAbility.buffId).found 
+    and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_COMMENCE
+    and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_IN_AIR
+    and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_LANDED 
+    and not KerapacCore.isPhasing then
+        if KerapacCore.kerapacPhase >= 4 and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
+            if API.GetHPrecent() > 70 then
+                KerapacCore.useWarpTime()
+            else
+                local oldThreshold = Data.emergencyEatThreshold
+                Data.emergencyEatThreshold = API.GetHPrecent()+10
+                KerapacCore.eatFood()
+                Data.emergencyEatThreshold = oldThreshold
+                KerapacCore.useWarpTime()
+            end
+        elseif KerapacCore.islightningPhase then
+            KerapacCore.useReflectAbility()
+            return
+        end
+    end
+
+    if Data.extraAbilities.resonanceAbility.AB.cooldown_timer <= 0 and not KerapacCore.isPhasing
+    and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_COMMENCE
+    and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_IN_AIR
+    and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_LANDED 
+    and KerapacCore.currentState ~= Data.bossStateEnum.TEAR_RIFT_ATTACK_COMMENCE
+    and KerapacCore.currentState ~= Data.bossStateEnum.TEAR_RIFT_ATTACK_MOVE
+    and API.GetHPrecent() <= 80 then
+        KerapacCore.useResonanceAbility()
+        KerapacCore.isResonanceEnabled = true
+        return
+    end
+
+    if Data.extraAbilities.fingerOfDeathAbility.AB.cooldown_timer <= 0 and KerapacCore.necrosisStacks > 5 and not KerapacCore.isPhasing then
+        KerapacCore.useFingerOfDeathAbility()
+        return
+    end
+
+    if Data.extraAbilities.volleyOfSoulsAbility.AB.cooldown_timer <= 0 and KerapacCore.residualSoulsStack > 2 and not KerapacCore.isPhasing then
+        KerapacCore.useVolleyOfSoulsAbility()
+        return
+    end
+
+    if Data.extraAbilities.touchOfDeathAbility.AB.cooldown_timer <= 0 then
+        KerapacCore.useTouchOfDeathAbility()
+        return
+    end
+
+    if Data.extraAbilities.soulSapAbility.AB.cooldown_timer <= 0 then
+        KerapacCore.useSoulSapAbility()
+        return
+    end
+
+    if Data.extraAbilities.sacrificeAbility.AB.cooldown_timer <= 0 and not KerapacCore.isPhasing then
+        KerapacCore.useSacrificeAbility()
+        return
+    end
+
+    if Data.extraAbilities.resonanceAbility.AB.cooldown_timer > 0
+    and Data.extraAbilities.preparationAbility.AB.cooldown_timer <= 0 then
+        KerapacCore.usePreparationAbility()
+        return
+    end
+
+    KerapacCore.log("Literally nothing to do so guess I'll do an auto attack")
+end
+
+function KerapacCore.handleResonance()
+    if not KerapacCore.isResonanceEnabled and not (API.Get_tick() - KerapacCore.resonanceTicks > 2) then return end
+    if API.Buffbar_GetIDstatus(Data.extraAbilities.resonanceAbility.buffId).found then
+        if Data.overheadCursesBuffs.SoulSplit.AB.enabled and not KerapacCore.isSoulSplitEnabled then
+            KerapacCore.enableSoulSplit()
+        else
+            KerapacCore.disableMagePray()
+        end
+    elseif not KerapacCore.isMagePrayEnabled then
+        KerapacCore.enableMagePray()
+        KerapacCore.isResonanceEnabled = false
+    end
+    KerapacCore.resonanceTicks = API.Get_tick()
+end
+
 function KerapacCore.managePlayer()
+    KerapacCore.castNextAbility()
+    KerapacCore.handleResonance()
+    KerapacCore.applyVulnerability()
     KerapacCore.eatFood()
     KerapacCore.drinkPrayer()
     KerapacCore.enablePassivePrayer()
@@ -724,7 +1265,7 @@ function KerapacCore.managePlayer()
 end
 
 function KerapacCore.manageBuffs()
-    if API.Get_tick() - KerapacCore.buffCheckCooldown <= 10 then return end
+    if API.Get_tick() - KerapacCore.buffCheckCooldown <= 10  then return end
 
     if KerapacCore.hasOverload then
         KerapacCore.drinkOverload()
@@ -733,41 +1274,11 @@ function KerapacCore.manageBuffs()
     if KerapacCore.hasWeaponPoison then
         KerapacCore.drinkWeaponPoison()
     end
-    
-    if KerapacCore.hasDarkness then
-        KerapacCore.useDarkness()
-    end
-    
-    if KerapacCore.hasInvokeDeath then
-        KerapacCore.useInvokeDeath()
-    end
-    
-    if KerapacCore.hasSplitSoul then
-        KerapacCore.useSplitSoul()
-    end
-
-    if KerapacCore.hasDebilitate then
-        KerapacCore.useDebilitateAbility()
-    end
-    
-    if KerapacCore.hasDevotion then
-        KerapacCore.useDevotionAbility()
-    end
-
-    if KerapacCore.hasReflect then
-        KerapacCore.useReflectAbility()
-    end
-
-    if KerapacCore.kerapacPhase == 4 then
-        if KerapacCore.hasImmortality then
-            KerapacCore.useImmortalityAbility()
-        end
-    end
 
     if KerapacCore.isScriptureEquipped and not KerapacCore.hasScriptureBuff then
         KerapacCore.enableScripture(KerapacCore.scripture)
     end
-    
+
     KerapacCore.buffCheckCooldown = API.Get_tick()
 end
 
@@ -928,8 +1439,8 @@ end
 function KerapacCore.HandleHardMode()
     if KerapacCore.isHardMode then
         if API.ScanForInterfaceTest2Get(false, { { 1591,15,-1,0 }, { 1591,17,-1,0 }, { 1591,41,-1,0 }, { 1591,12,-1,0 } })[1].textids == "Kerapac" then
-            KerapacCore.log("I said in the thread hardmode does not work yet......")
-            --API.DoAction_Interface(0x24,0xffffffff,1,1591,4,-1,API.OFF_ACT_GeneralInterface_route)
+            KerapacCore.log("Time to lock in")
+            API.DoAction_Interface(0x24,0xffffffff,1,1591,4,-1,API.OFF_ACT_GeneralInterface_route)
         end
     end
 end
@@ -1024,7 +1535,7 @@ function KerapacCore.WaitForPartyToBeComplete()
     KerapacCore.sleepTickRandom(1)
     
 end
-KerapacCore.WaitForPartyToBeComplete()
+
 function KerapacCore.BeginFight()
     KerapacCore.log("Start encounter")
     KerapacCore.playerPosition = API.PlayerCoord()
@@ -1197,7 +1708,7 @@ end
 
 function KerapacCore.handleCombat(state)
     if (KerapacCore.isFightStarted) then
-        if state == Data.bossStateEnum.BASIC_ATTACK.name and not API.Buffbar_GetIDstatus(Data.extraAbilities.splitSoulAbility.buffId).found then
+        if state == Data.bossStateEnum.BASIC_ATTACK.name then
             KerapacCore.enableMagePray()
         end
         
@@ -1205,8 +1716,9 @@ function KerapacCore.handleCombat(state)
             if KerapacCore.islightningPhase then
                 KerapacCore.islightningPhase = false
             end
-            local kerapacInfo = KerapacCore.getKerapacInformation()
-            API.DoAction_TileF(KerapacCore.getKerapacPositionFFPOINT())
+            KerapacCore.canAttack = false
+            KerapacCore.sleepTickRandom(2)
+            API.DoAction_Dive_Tile(WPOINT.new(math.floor(KerapacCore.getKerapacPositionFFPOINT().x), math.floor(KerapacCore.getKerapacPositionFFPOINT().y), math.floor(KerapacCore.getKerapacPositionFFPOINT().z)))
             KerapacCore.enableMagePray()
             KerapacCore.isRiftDodged = true
             KerapacCore.log("Moved player under Kerapac")
@@ -1216,6 +1728,7 @@ function KerapacCore.handleCombat(state)
             KerapacCore.sleepTickRandom(2)
             KerapacCore.attackKerapac()
             KerapacCore.isRiftDodged = false
+            KerapacCore.canAttack = true
             KerapacCore.enableMagePray()
             KerapacCore.log("Attacking Kerapac")
         end
@@ -1254,23 +1767,9 @@ function KerapacCore.handleCombat(state)
             KerapacCore.log("Lightning Phase active ------------")
             local surgeAB = API.GetABs_name("Surge")
             API.DoAction_Tile(WPOINT.new(KerapacCore.playerPosition.x - 12, KerapacCore.playerPosition.y, 0))
-            KerapacCore.sleepTickRandom(1)
-            API.DoAction_Ability_Direct(surgeAB, 1, API.OFF_ACT_GeneralInterface_route)
             KerapacCore.sleepTickRandom(3)
             KerapacCore.attackKerapac()
             KerapacCore.islightningPhase = true
-        end
-
-        if state == Data.bossStateEnum.HARDMODE_PHASE4.name then
-            -- Hard mode phase 4 logic
-            -- use lifetransfer go to playerClone
-            -- use vitality
-            -- go to next clone
-            -- useInvokeDeath on each target
-            -- throw vulns on target
-            -- cycle defensives
-            -- cycle time warp if hp and adren is high 
-            -- once all 3 targets are dead target kerapac
         end
     end
 end
@@ -1293,6 +1792,11 @@ function KerapacCore.handleBossReset()
     KerapacCore.islightningPhase = false
     KerapacCore.isPlayerDead = false
     KerapacCore.isTeamComplete = false
+    KerapacCore.isPhase4SetupComplete = false
+    KerapacCore.isClonesSetup = false
+    KerapacCore.isResonanceEnabled = false
+    KerapacCore.isMagePrayEnabled = false
+    KerapacCore.isSoulSplitEnabled = false
     
     KerapacCore.hasOverload = false
     KerapacCore.hasWeaponPoison = false

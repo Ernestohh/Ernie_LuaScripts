@@ -6,12 +6,12 @@ local Core = require("kerapac/KerapacCore")
 
 Core.log("Started Ernie's Kerapac Bosser " .. Data.version)
 API.SetMaxIdleTime(5)
+API.Write_fake_mouse_do(false)
 
 while (API.Read_LoopyLoop()) do
     if Core.guiVisible then
         Core.DrawGui() 
     end
-    
     if Core.startScript then
         if not Core.isInBattle and not Core.isTimeToLoot then
             if not Core.isInWarsRetreat then
@@ -42,12 +42,28 @@ while (API.Read_LoopyLoop()) do
                 Core.startEncounter()
                 Core.checkKerapacExists()
             end
-        elseif Core.isInBattle and API.Read_LoopyLoop() and not Core.isPlayerDead then
+        elseif Core.isInBattle and API.Read_LoopyLoop() and not Core.isPlayerDead and not Core.isHardMode then
             Core.avoidLightningBolts()
             Core.managePlayer()
             Core.manageBuffs()
             Core.handleBossPhase()
             Core.handleStateChange(Core.getKerapacAnimation())
+        elseif Core.isInBattle and API.Read_LoopyLoop() and not Core.isPlayerDead and Core.isHardMode then
+            if Core.kerapacPhase >= 4 then
+                Core.hardModePhase4Setup()
+                if Core.isPhase4SetupComplete then 
+                    Core.HandlePhase4()
+                    Core.managePlayer()
+                    Core.manageBuffs()
+                    Core.handleBossPhase()
+                end
+            else
+                Core.avoidLightningBolts()
+                Core.managePlayer()
+                Core.manageBuffs()
+                Core.handleBossPhase()
+                Core.handleStateChange(Core.getKerapacAnimation())
+            end
         elseif Core.isPlayerDead then
             Core.reclaimItemsAtGrave() 
             Core.handleBossReset()

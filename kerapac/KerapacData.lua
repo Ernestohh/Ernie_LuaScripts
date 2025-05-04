@@ -1,8 +1,8 @@
-local version = "8.2"
+local version = "8.3"
 
 local partyLeader = nil -- replace nil with playername like this "Bob" 
 local partyMembers = {} -- Add all player names including partyleader like this {"Bob", "Jo", "Mama"}
-local bankPin = nil -- replace nil with your bank pin like this 1234 don't add ""
+local bankPin = nil     -- replace nil with your bank pin like this 1234 don't add ""
 
 local prayerType = {
     Curses = { name = "Curses" },
@@ -127,38 +127,153 @@ local extraAbilities = {
         name = "Devotion", 
         buffId = 21665, 
         AB = nil,
-        threshold = 50
+        threshold = 50,
+        adrenaline = -15
     },
     debilitateAbility = {
         name = "Debilitate", 
         debuffId = 14226, 
         AB = nil,
-        threshold = 50
+        threshold = 50,
+        adrenaline = -15
     },
     freedomAbility = {
         name = "Freedom", 
         buffId = 14220, 
         AB = nil,
-        threshold = 0
+        threshold = 0,
+        adrenaline = 0
     },
     reflectAbility = {
         name = "Reflect", 
         buffId = 14225, 
         AB = nil,
-        threshold = 50
+        threshold = 50,
+        adrenaline = -15
     },
     resonanceAbility = {
         name = "Resonance", 
         buffId = 14222, 
         AB = nil,
-        threshold = 0
+        threshold = 0,
+        adrenaline = 0
+    },
+    preparationAbility = {
+        name = "Preparation",
+        buffId = 14223,
+        AB = nil,
+        threshold = 0,
+        adrenaline = 0
     },
     immortalityAbility = {
         name = "Immortality", 
         buffId = 14230, 
         AB = nil,
-        threshold = 100
-    }
+        threshold = 100,
+        adrenaline = -100
+    },
+    sacrificeAbility = {
+        name = "Sacrifice",
+        AB = nil,
+        threshold = 0,
+        adrenaline = 8
+    },
+    necroBasicAbility = {
+        name = "Necromancy basic attack",
+        AB = nil,
+        threshold = 0,
+        adrenaline = 9
+    },
+    touchOfDeathAbility = {
+        name = "Touch of Death",
+        AB = nil,
+        threshold = 0,
+        adrenaline = 9
+    },
+    soulSapAbility = {
+        name = "Soul Sap",
+        AB = nil,
+        threshold = 0,
+        adrenaline = 9
+    },
+    volleyOfSoulsAbility = {
+        name = "Volley of Souls",
+        AB = nil,
+        threshold = 0,
+        adrenaline = 0
+    },
+    conjureUndeadArmyAbility = {
+        name = "Conjure Undead Army",
+        AB = nil,
+        threshold = 0,
+        adrenaline = 0
+    },
+    conjureSkeletonWarriorAbility = {
+        name = "Conjure Skeleton Warrior",
+        AB = nil,
+        threshold = 0,
+        adrenaline = 0
+    },
+    conjureVengefulGhostAbility = {
+        name = "Conjure Vengeful Ghost",
+        AB = nil,
+        threshold = 0,
+        adrenaline = 0
+    },
+    conjurePutridZombieAbility = {
+        name = "Conjure Putrid Zombie",
+        AB = nil,
+        threshold = 0,
+        adrenaline = 0
+    },
+    commandSkeletonWarriorAbility = {
+        name = "Command Skeleton Warrior",
+        AB = nil,
+        threshold = 0,
+        adrenaline = 0
+    },
+    commandVengefulGhostAbility = {
+        name = "Command Vengeful Ghost",
+        AB = nil,
+        threshold = 0,
+        adrenaline = 0
+    },
+    fingerOfDeathAbility = {
+        name = "Finger of Death",
+        AB = nil,
+        threshold = 60,
+        adrenaline = -60
+    },
+    bloatAbility = {
+        name = "Bloat",
+        AB = nil,
+        threshold = 10,
+        adrenaline = -10
+    },
+    deathGraspAbility = {
+        name = "Death Grasp",
+        AB = nil,
+        threshold = 25,
+        adrenaline = -25
+    },
+    deathEssenceAbility = {
+        name = "Death Essence",
+        AB = nil,
+        threshold = 30,
+        adrenaline = -30
+    },
+    deathSkullsAbility = {
+        name = "Death Skulls",
+        AB = nil,
+        threshold = 100,
+        adrenaline = -100
+    },
+    livingDeathAbility = {
+        name = "Living Death",
+        AB = nil,
+        threshold = 100,
+        adrenaline = -100
+    },
 }
 
 local overheadPrayersBuffs = {
@@ -341,8 +456,8 @@ local bossStateEnum = {
         name = "LIGHTNING_ATTACK", 
         animations = { 34197 } 
     },
-    HARDMODE_PHASE4 = {
-        name = "HARDMODE_PHASE4",
+    PHASE4 = {
+        name = "PHASE4",
         animations = {34201}
     }
 }
@@ -362,19 +477,20 @@ local BUTTON_MARGIN = 8
 
 local hpThreshold = 70
 local prayerThreshold = 30
-local emergencyEatThreshold = 30
+local emergencyEatThreshold = 50
 local foodCooldown = 3
 local drinkCooldown = 3
 local phaseTransitionThreshold = 50000
 local lootPosition = 5
 local stun = 26103
-local dodgeCooldown = 6
+local dodgeCooldown = 4
 local distanceThreshold = 6
 local proximityThreshold = 9
 local weaponPoisonBuff = 30095
 local waitForCheckTicks = 0
 local playerClone = 28073
 local kerapacClones = 28076
+local summoningPointsForScroll = 20 -- change this to your scroll value
 
 return {
     version = version,
@@ -397,6 +513,7 @@ return {
     partyLeader = partyLeader,
     bankPin = bankPin,
     partyMembers = partyMembers,
+    summoningPointsForScroll = summoningPointsForScroll,
 
     MARGIN = MARGIN,
     PADDING_Y = PADDING_Y, 
