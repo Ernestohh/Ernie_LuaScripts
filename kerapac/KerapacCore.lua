@@ -522,6 +522,7 @@ function KerapacCore.disableMagePray()
         if API.Buffbar_GetIDstatus(buffId).found and ability.id ~= 0 then
             KerapacCore.log("Deactivate " .. selectedOverheadData.name)
             API.DoAction_Ability_Direct(ability, 1, API.OFF_ACT_GeneralInterface_route)
+            KerapacCore.isMagePrayEnabled = false
         end
     else
         KerapacCore.log("No valid overhead prayer selected or data not found.")
