@@ -7,12 +7,12 @@ local Core = require("kerapac/KerapacCore")
 Core.log("Started Ernie's Kerapac Bosser " .. Data.version)
 API.SetMaxIdleTime(5)
 API.Write_fake_mouse_do(false)
-
+Core.handleCombatMode()
 while (API.Read_LoopyLoop()) do
     if Core.guiVisible then
         Core.DrawGui() 
     end
-    Core.handleCombatMode()
+    
     if Core.startScript then
         if not Core.isInBattle and not Core.isTimeToLoot then
             if not Core.isInWarsRetreat then
