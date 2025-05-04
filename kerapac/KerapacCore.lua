@@ -395,8 +395,11 @@ function KerapacCore.getBossStateFromAnimation(animation)
     end
     return nil
 end
+
+print(API.Buffbar_GetIDstatus(Data.extraAbilities.splitSoulAbility.buffId).found)
 function KerapacCore.enableMagePray()
-    if API.Buffbar_GetIDstatus(Data.extraAbilities.splitSoulAbility.buffId).found then return end
+    local isBuffActive = API.Buffbar_GetIDstatus(Data.extraAbilities.splitSoulAbility.buffId).found
+    if isBuffActive then return end
     if API.GetPrayPrecent() <= 0 or KerapacCore.magePrayEnabled then return end
     
     local overheadTable = nil
@@ -1254,7 +1257,7 @@ end
 
 function KerapacCore.handleResonance()
     if not KerapacCore.isResonanceEnabled and not (API.Get_tick() - KerapacCore.resonanceTicks > 2) then 
-        if not KerapacCore.isMagePrayEnabled and not KerapacCore.isMeleePrayEnabled and not KerapacCore.isSoulSplitEnabled then
+        if not KerapacCore.isMagePrayEnabled and not KerapacCore.isMeleePrayEnabled and KerapacCore.isSoulSplitEnabled then
             KerapacCore.enableMagePray()
         end
         return 
@@ -1517,7 +1520,7 @@ end
 
 function KerapacCore.RemoveDuplicates(tbl)
     local hash, result = {}, {}
-    for _, v in ipairs(tbl) do
+    for _, v in pairs(tbl) do
         if not hash[v] then
             hash[v] = true
             table.insert(result, v)
@@ -1559,9 +1562,11 @@ function KerapacCore.WaitForPartyToBeComplete()
     local partyMembers = {}
     for i = 1, #players do
         local player = players[i]
+        KerapacCore.log(player.Name)
         table.insert(playersInVicinity, string.lower(player.Name))
     end
     for i = 1, #Data.partyMembers do
+        KerapacCore.log(Data.partyMembers[i])
         table.insert(partyMembers, string.lower(Data.partyMembers[i]))
     end
     playersInVicinity = KerapacCore.RemoveDuplicates(playersInVicinity)
