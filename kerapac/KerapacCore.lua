@@ -40,6 +40,7 @@ local KerapacCore = {
     isMeleePrayEnabled = false,
     isSoulSplitEnabled = false,
     isFullManualEnabled = false,
+    isMaxAdrenaline = false,
     
     hasOverload = false,
     hasWeaponPoison = false,
@@ -1419,6 +1420,16 @@ function KerapacCore.prepareForBattle()
     end
     
     KerapacCore.isPrepared = true
+end
+
+function KerapacCore.handleAdrenalineCrystal()
+    if KerapacCore.isMaxAdrenaline then return end
+    if API.GetAddreline_() ~= 100 then
+        Interact:Object("Adrenaline crystal", "Channel", 60)
+        API.WaitUntilMovingandAnimEnds(10, 4)
+    else
+        KerapacCore.isMaxAdrenaline = true
+    end
 end
 
 function KerapacCore.goThroughPortal()

@@ -491,6 +491,7 @@ local waitForCheckTicks = 0
 local playerClone = 28073
 local kerapacClones = 28076
 local summoningPointsForScroll = 20 -- change this to your scroll value
+local adrenalineCrystal = 114749
 
 return {
     version = version,

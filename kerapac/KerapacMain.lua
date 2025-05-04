@@ -30,8 +30,12 @@ while (API.Read_LoopyLoop()) do
             if Core.isInWarsRetreat and Core.isBanking and Core.isRestoringPrayer and not Core.isPrepared and API.Read_LoopyLoop() then
                 Core.prepareForBattle()
             end
+
+            if Core.isPrepared and not Core.isMaxAdrenaline and API.Read_LoopyLoop() then
+                Core.handleAdrenalineCrystal()
+            end
             
-            if Core.isPrepared and not Core.isPortalUsed and API.Read_LoopyLoop() then
+            if Core.isMaxAdrenaline and not Core.isPortalUsed and API.Read_LoopyLoop() then
                Core.goThroughPortal() 
             end
             
