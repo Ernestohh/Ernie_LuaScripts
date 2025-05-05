@@ -246,6 +246,7 @@ local extraAbilities = {
     },
     bloatAbility = {
         name = "Bloat",
+        buffId = 30098,
         AB = nil,
         threshold = 10,
         adrenaline = -10
@@ -270,6 +271,7 @@ local extraAbilities = {
     },
     livingDeathAbility = {
         name = "Living Death",
+        buffid = 30078,
         AB = nil,
         threshold = 100,
         adrenaline = -100
@@ -287,7 +289,13 @@ local extraAbilities = {
         buffId = 14229,
         threshold = 100,
         adrenaline = -100
-    }
+    },
+    specialAttackAbility = {
+        name = "Weapon Special Attack"
+    },
+    essenceOfFinalityAbility = {
+        name = "Essence of Finality"
+    },
 }
 
 local overheadPrayersBuffs = {
@@ -476,6 +484,10 @@ local bossStateEnum = {
     }
 }
 
+local deathGuardIds = {55524, 55532, 55540, 55528, 55536, 55544}
+local omniGuardIds = {55484, 55480}
+local deathSparkReady = 30127
+
 local MARGIN = 100
 local PADDING_Y = 6
 local PADDING_X = 5
@@ -542,6 +554,9 @@ return {
     BUTTON_WIDTH = BUTTON_WIDTH,
     BUTTON_HEIGHT = BUTTON_HEIGHT,
     BUTTON_MARGIN = BUTTON_MARGIN,
+    deathGuardIds = deathGuardIds,
+    omniGuardIds = omniGuardIds,
+    deathSparkReady = deathSparkReady,
 
     hpThreshold = hpThreshold,
     prayerThreshold = prayerThreshold,

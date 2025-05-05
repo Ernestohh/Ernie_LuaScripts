@@ -55,6 +55,8 @@ local KerapacCore = {
     hasDebilitate = false,
     hasBloatDebuff = false,
     hasDevotion = false,
+    hasDeathGuardEquipped = false,
+    hasOmniGuardEquipped = false,
     canAttack = true,
     
     playerPosition = nil,
@@ -402,7 +404,6 @@ function KerapacCore.getBossStateFromAnimation(animation)
     return nil
 end
 
-print(API.Buffbar_GetIDstatus(Data.extraAbilities.splitSoulAbility.buffId).found)
 function KerapacCore.enableMagePray()
     local isBuffActive = API.Buffbar_GetIDstatus(Data.extraAbilities.splitSoulAbility.buffId).found
     if isBuffActive then return end
@@ -594,6 +595,24 @@ function KerapacCore.disablePassivePrayer()
     end
 end
 
+function KerapacCore.checkForDebilitateOnTarget()
+    for _,value in ipairs(API.ReadTargetInfo(true).Buff_stack) do
+        if value == Data.extraAbilities.debilitateAbility.debuffId then
+            return true
+        end
+    end
+    return false
+end
+
+function KerapacCore.checkForBloatOnTarget()
+    for _,value in ipairs(API.ReadTargetInfo(true).Buff_stack) do
+        if value == Data.extraAbilities.bloatAbility.buffId then
+            return true
+        end
+    end
+    return false
+end
+
 function KerapacCore.useDarkness()
     API.DoAction_Ability_check(Data.extraAbilities.darknessAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
     KerapacCore.log("Concealing myself in the shadows")
@@ -647,12 +666,7 @@ end
 
 function KerapacCore.useDebilitateAbility()
     if  KerapacCore.hasDebilitate then
-        local hasDebilitateDebuff = false
-        for _,value in ipairs(API.ReadTargetInfo(true).Buff_stack) do
-            if value == Data.extraAbilities.debilitateAbility.debuffId then
-                hasDebilitateDebuff = true
-            end
-        end
+        local hasDebilitateDebuff = KerapacCore.checkForDebilitateOnTarget()
         if not hasDebilitateDebuff and KerapacCore.currentState ~= Data.bossStateEnum.TEAR_RIFT_ATTACK_COMMENCE.name and KerapacCore.currentState ~= Data.bossStateEnum.TEAR_RIFT_ATTACK_MOVE.name then
             if API.DoAction_Ability_check(Data.extraAbilities.debilitateAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true) then
                 KerapacCore.log("Kick in the nuts for more defense")
@@ -738,13 +752,25 @@ end
 function KerapacCore.useCommandVengefulGhost()
     API.DoAction_Ability_check(Data.extraAbilities.commandVengefulGhostAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
     KerapacCore.log("Commanding Casper to haunt the target")
-    KerapacCore.sleepTickRandom(1)
+end
+
+function KerapacCore.useSpecialAttackAbility()
+    local weaponSpecAB = API.GetABs_name1("Weapon Special Attack")
+    API.DoAction_Ability_check(Data.extraAbilities.specialAttackAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+    KerapacCore.log("You are special")
+end
+
+function KerapacCore.useEssenceOfFinalityAbility()
+    local eofAB = API.GetABs_name1("Essence of Finality")
+    API.DoAction_Ability_check(Data.extraAbilities.essenceOfFinalityAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+    KerapacCore.log("Nice bling")
 end
 
 function KerapacCore.applyVulnerability()
     if not Inventory:Contains("Vulnerability bomb") and not API.GetABs_name1("Vulnerability bomb").enabled then return end
     if API.ReadTargetInfo().Target_Name ~= "Kerapac, the bound" and API.ReadTargetInfo().Target_Name ~= "Echo of Kerapac" then return end
     if not (API.Get_tick() - KerapacCore.vulnTicks > 12) then return end
+    if not KerapacCore.currentState == Data.bossStateEnum.TEAR_RIFT_ATTACK_COMMENCE and not KerapacCore.currentState == Data.bossStateEnum.TEAR_RIFT_ATTACK_MOVE then return end
     local hasVuln = false
     for _,value in ipairs(API.ReadTargetInfo(true).Buff_stack) do
         if value == 14395 then
@@ -1039,55 +1065,79 @@ function KerapacCore.castNextAbility()
     if attackTick == KerapacCore.lastAttackTick then return end
     if not (API.Get_tick() - KerapacCore.globalCooldownTicks > 2) then return end
     if not KerapacCore.canAttack then return end
-    KerapacCore.hasBloatDebuff = false
+    KerapacCore.hasBloatDebuff = KerapacCore.checkForBloatOnTarget()
     KerapacCore.necrosisStacks = API.VB_FindPSettinOrder(10986).state
     KerapacCore.residualSoulsStack = API.VB_FindPSettinOrder(11035).state
     KerapacCore.lastAttackTick = attackTick
     KerapacCore.globalCooldownTicks = API.Get_tick()
 
-    if Data.extraAbilities.conjureUndeadArmyAbility.AB.enabled and API.VB_FindPSettinOrder(10994).state < 1 and API.VB_FindPSettinOrder(11018).state < 1 and API.VB_FindPSettinOrder(11006).state < 1 then
+    if Data.extraAbilities.conjureUndeadArmyAbility.AB.enabled 
+    and API.VB_FindPSettinOrder(10994).state < 1 
+    and API.VB_FindPSettinOrder(11018).state < 1 
+    and API.VB_FindPSettinOrder(11006).state < 1 then
         KerapacCore.useConjureUndeadArmy()
         return
     end
 
-    if Data.extraAbilities.conjureSkeletonWarriorAbility.AB.enabled and API.VB_FindPSettinOrder(10994).state < 1 then
+    if Data.extraAbilities.conjureSkeletonWarriorAbility.AB.enabled 
+    and API.VB_FindPSettinOrder(10994).state < 1 then
         KerapacCore.useConjureSkeletonWarrior()
         return
     end
 
-    if Data.extraAbilities.conjureVengefulGhostAbility.AB.enabled and API.VB_FindPSettinOrder(11018).state < 1 then
+    if Data.extraAbilities.conjureVengefulGhostAbility.AB.enabled 
+    and API.VB_FindPSettinOrder(11018).state < 1 then
         KerapacCore.useConjureVengefulGhost()
         return
     end
 
-    if Data.extraAbilities.conjurePutridZombieAbility.AB.enabled and API.VB_FindPSettinOrder(11006).state < 1 then
+    if Data.extraAbilities.conjurePutridZombieAbility.AB.enabled 
+    and API.VB_FindPSettinOrder(11006).state < 1 then
         KerapacCore.useConjurePutridZombie()
         return
     end
 
-    if Data.extraAbilities.darknessAbility.AB.cooldown_timer <= 0 and not API.Buffbar_GetIDstatus(Data.extraAbilities.darknessAbility.buffId).found and KerapacCore.hasDarkness then
+    if Data.extraAbilities.darknessAbility.AB.cooldown_timer <= 0 
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.darknessAbility.buffId).found 
+    and Data.extraAbilities.darknessAbility.AB.enabled
+    and KerapacCore.hasDarkness then
         KerapacCore.useDarkness()
     end
 
-    if Data.extraAbilities.invokeDeathAbility.AB.cooldown_timer <= 0 and not KerapacCore.hasDeathInvocation() and not KerapacCore.hasMarkOfDeath() and KerapacCore.hasDeathInvocation then
+    if Data.extraAbilities.invokeDeathAbility.AB.cooldown_timer <= 0 
+    and not KerapacCore.hasDeathInvocation() 
+    and not KerapacCore.hasMarkOfDeath() 
+    and Data.extraAbilities.invokeDeathAbility.AB.enabled 
+    and KerapacCore.hasDeathInvocation then
         KerapacCore.useInvokeDeath()
     end
 
-    if (KerapacCore.kerapacPhase < 3) and Data.extraAbilities.splitSoulAbility.AB.cooldown_timer <= 0 and Data.extraAbilities.splitSoulAbility.AB.id > 0 and Data.extraAbilities.splitSoulAbility.AB.enabled and not API.Buffbar_GetIDstatus(Data.extraAbilities.splitSoulAbility.buffId).found then
+    if (KerapacCore.kerapacPhase < 3)
+    and Data.extraAbilities.splitSoulAbility.AB.cooldown_timer <= 0 
+    and Data.extraAbilities.splitSoulAbility.AB.id > 0 
+    and Data.extraAbilities.splitSoulAbility.AB.enabled 
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.splitSoulAbility.buffId).found then
         KerapacCore.useSplitSoul()
     end
-    if Data.extraAbilities.commandSkeletonWarriorAbility.AB.cooldown_timer <= 0 and Data.extraAbilities.commandSkeletonWarriorAbility.AB.enabled then
+    if Data.extraAbilities.commandSkeletonWarriorAbility.AB.cooldown_timer <= 0 
+    and Data.extraAbilities.commandSkeletonWarriorAbility.AB.enabled then
         KerapacCore.useCommandSkeletonWarrior()
         return
     end
 
-    if Data.extraAbilities.commandVengefulGhostAbility.AB.cooldown_timer <= 0 and Data.extraAbilities.commandVengefulGhostAbility.AB.enabled then
+    if Data.extraAbilities.commandVengefulGhostAbility.AB.cooldown_timer <= 0 
+    and Data.extraAbilities.commandVengefulGhostAbility.AB.enabled then
         KerapacCore.useCommandVengefulGhost()
         return
     end
 
-    if Data.extraAbilities.deathSkullsAbility.AB.cooldown_timer <= 0 and API.GetAddreline_() >= Data.extraAbilities.deathSkullsAbility.threshold and not KerapacCore.isPhasing then
-        if KerapacCore.kerapacPhase >= 4 and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
+    if Data.extraAbilities.deathSkullsAbility.AB.cooldown_timer <= 0 
+    and Data.extraAbilities.deathSkullsAbility.AB.enabled 
+    and API.GetAddreline_() >= Data.extraAbilities.deathSkullsAbility.threshold 
+    and not API.Buffbar_GetIDstatus(Data.deathSparkReady).found
+    and not KerapacCore.isPhasing then
+        if KerapacCore.kerapacPhase >= 4 
+        and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
             if API.GetHPrecent() > 70 then
                 KerapacCore.useWarpTime()
             else
@@ -1103,6 +1153,7 @@ function KerapacCore.castNextAbility()
     end
 
     if Data.extraAbilities.immortalityAbility.AB.cooldown_timer <= 0 
+    and Data.extraAbilities.immortalityAbility.AB.enabled 
     and not API.Buffbar_GetIDstatus(Data.extraAbilities.debilitateAbility.debuffId).found
     and not API.Buffbar_GetIDstatus(Data.extraAbilities.reflectAbility.buffId).found
     and not API.Buffbar_GetIDstatus(Data.extraAbilities.devotionAbility.buffId).found
@@ -1116,7 +1167,8 @@ function KerapacCore.castNextAbility()
     and not KerapacCore.isPhasing
     and KerapacCore.kerapacPhase >= 4
     and API.GetAddreline_() >= Data.extraAbilities.immortalityAbility.threshold then
-        if KerapacCore.kerapacPhase >= 4 and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
+        if KerapacCore.kerapacPhase >= 4 
+        and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
             if API.GetHPrecent() > 70 then
                 KerapacCore.useWarpTime()
             else
@@ -1132,6 +1184,7 @@ function KerapacCore.castNextAbility()
     end
 
     if Data.extraAbilities.barricadeAbility.AB.cooldown_timer <= 0 
+    and Data.extraAbilities.barricadeAbility.AB.enabled 
     and not API.Buffbar_GetIDstatus(Data.extraAbilities.debilitateAbility.debuffId).found
     and not API.Buffbar_GetIDstatus(Data.extraAbilities.reflectAbility.buffId).found
     and not API.Buffbar_GetIDstatus(Data.extraAbilities.devotionAbility.buffId).found
@@ -1144,7 +1197,8 @@ function KerapacCore.castNextAbility()
     and KerapacCore.islightningPhase
     and not KerapacCore.isPhasing
     and API.GetAddreline_() >= Data.extraAbilities.barricadeAbility.threshold then
-        if KerapacCore.kerapacPhase >= 4 and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
+        if KerapacCore.kerapacPhase >= 4 
+        and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
             if API.GetHPrecent() > 70 then
                 KerapacCore.useWarpTime()
             else
@@ -1160,6 +1214,7 @@ function KerapacCore.castNextAbility()
     end
 
     if Data.extraAbilities.rejuvenateAbility.AB.cooldown_timer <= 0 
+    and Data.extraAbilities.rejuvenateAbility.AB.enabled 
     and not API.Buffbar_GetIDstatus(Data.extraAbilities.debilitateAbility.debuffId).found
     and not API.Buffbar_GetIDstatus(Data.extraAbilities.reflectAbility.buffId).found
     and not API.Buffbar_GetIDstatus(Data.extraAbilities.devotionAbility.buffId).found
@@ -1173,7 +1228,8 @@ function KerapacCore.castNextAbility()
     and not KerapacCore.isPhasing
     and KerapacCore.kerapacPhase >= 4
     and API.GetAddreline_() >= Data.extraAbilities.rejuvenateAbility.threshold then
-        if KerapacCore.kerapacPhase >= 4 and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
+        if KerapacCore.kerapacPhase >= 4 
+        and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
             if API.GetHPrecent() > 70 then
                 KerapacCore.useWarpTime()
             else
@@ -1189,10 +1245,12 @@ function KerapacCore.castNextAbility()
     end
 
     if Data.extraAbilities.livingDeathAbility.AB.cooldown_timer <= 0 
+    and Data.extraAbilities.livingDeathAbility.AB.enabled 
     and API.GetAddreline_() >= Data.extraAbilities.livingDeathAbility.threshold 
     and not KerapacCore.isPhasing 
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.livingDeathAbility.AB.id).found then
-        if KerapacCore.kerapacPhase >= 4 and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.livingDeathAbility.buffId).found then
+        if KerapacCore.kerapacPhase >= 4 
+        and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
             if API.GetHPrecent() > 70 then
                 KerapacCore.useWarpTime()
             else
@@ -1208,6 +1266,7 @@ function KerapacCore.castNextAbility()
     end
 
     if Data.extraAbilities.devotionAbility.AB.cooldown_timer <= 0 
+    and Data.extraAbilities.devotionAbility.AB.enabled 
     and not API.Buffbar_GetIDstatus(Data.extraAbilities.debilitateAbility.debuffId).found
     and not API.Buffbar_GetIDstatus(Data.extraAbilities.reflectAbility.buffId).found
     and not API.Buffbar_GetIDstatus(Data.extraAbilities.devotionAbility.buffId).found
@@ -1220,7 +1279,8 @@ function KerapacCore.castNextAbility()
     and not KerapacCore.islightningPhase
     and not KerapacCore.isPhasing
     and API.GetAddreline_() >= Data.extraAbilities.devotionAbility.threshold then
-        if KerapacCore.kerapacPhase >= 4 and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
+        if KerapacCore.kerapacPhase >= 4 
+        and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
             if API.GetHPrecent() > 70 then
                 KerapacCore.useWarpTime()
             else
@@ -1235,6 +1295,7 @@ function KerapacCore.castNextAbility()
         return
     end
     if Data.extraAbilities.debilitateAbility.AB.cooldown_timer <= 0 
+    and Data.extraAbilities.debilitateAbility.AB.enabled 
     and not API.Buffbar_GetIDstatus(Data.extraAbilities.debilitateAbility.debuffId).found
     and not API.Buffbar_GetIDstatus(Data.extraAbilities.reflectAbility.buffId).found
     and not API.Buffbar_GetIDstatus(Data.extraAbilities.devotionAbility.buffId).found
@@ -1246,7 +1307,8 @@ function KerapacCore.castNextAbility()
     and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_LANDED
     and not KerapacCore.isPhasing
     and API.GetAddreline_() >= Data.extraAbilities.debilitateAbility.threshold then
-        if KerapacCore.kerapacPhase >= 4 and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
+        if KerapacCore.kerapacPhase >= 4 
+        and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
             if API.GetHPrecent() > 70 then
                 KerapacCore.useWarpTime()
             else
@@ -1263,6 +1325,7 @@ function KerapacCore.castNextAbility()
     end
 
     if Data.extraAbilities.reflectAbility.AB.cooldown_timer <= 0 
+    and Data.extraAbilities.reflectAbility.AB.enabled 
     and API.GetAddreline_() >= Data.extraAbilities.reflectAbility.threshold
     and not API.Buffbar_GetIDstatus(Data.extraAbilities.debilitateAbility.debuffId).found
     and not API.Buffbar_GetIDstatus(Data.extraAbilities.reflectAbility.buffId).found
@@ -1274,7 +1337,8 @@ function KerapacCore.castNextAbility()
     and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_IN_AIR
     and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_LANDED 
     and not KerapacCore.isPhasing then
-        if KerapacCore.kerapacPhase >= 4 and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
+        if KerapacCore.kerapacPhase >= 4 
+        and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
             if API.GetHPrecent() > 70 then
                 KerapacCore.useWarpTime()
             else
@@ -1290,7 +1354,31 @@ function KerapacCore.castNextAbility()
         end
     end
 
-    if Data.extraAbilities.resonanceAbility.AB.cooldown_timer <= 0 and not KerapacCore.isPhasing
+    if not API.Buffbar_GetIDstatus(55480).found 
+    and not API.DeBuffbar_GetIDstatus(55480).found
+    and not KerapacCore.isPhasing
+    and API.GetAddreline_() >= 30 then
+        if KerapacCore.hasOmniGuardEquipped and API.GetABs_name1("Weapon Special Attack").enabled then
+            KerapacCore.useSpecialAttackAbility()
+        elseif API.GetABs_name1("Essence of Finality").enabled then
+            KerapacCore.useEssenceOfFinalityAbility()
+        end
+    end
+
+    if not API.DeBuffbar_GetIDstatus(55524).found
+    and not KerapacCore.isPhasing
+    and KerapacCore.necrosisStacks > 5
+    and API.GetAddreline_() >= 25 then
+        if KerapacCore.hasDeathGuardEquipped and API.GetABs_name1("Weapon Special Attack").enabled then
+            KerapacCore.useSpecialAttackAbility()
+        elseif API.GetABs_name1("Essence of Finality").enabled then
+            KerapacCore.useEssenceOfFinalityAbility()
+        end
+    end
+
+    if Data.extraAbilities.resonanceAbility.AB.cooldown_timer <= 0
+    and Data.extraAbilities.resonanceAbility.AB.enabled  
+    and not KerapacCore.isPhasing
     and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_COMMENCE
     and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_IN_AIR
     and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_LANDED 
@@ -1302,32 +1390,54 @@ function KerapacCore.castNextAbility()
         return
     end
 
-    if Data.extraAbilities.fingerOfDeathAbility.AB.cooldown_timer <= 0 and KerapacCore.necrosisStacks > 5 and not KerapacCore.isPhasing then
+    if KerapacCore.necrosisStacks > 5 
+    and not API.Buffbar_GetIDstatus(Data.deathSparkReady).found
+    and not KerapacCore.isPhasing then
         KerapacCore.useFingerOfDeathAbility()
         return
     end
 
-    if Data.extraAbilities.volleyOfSoulsAbility.AB.cooldown_timer <= 0 and KerapacCore.residualSoulsStack > 2 and not KerapacCore.isPhasing then
+    if KerapacCore.residualSoulsStack > 2 
+    and Data.extraAbilities.volleyOfSoulsAbility.AB.enabled 
+    and not API.Buffbar_GetIDstatus(Data.deathSparkReady).found
+    and not KerapacCore.isPhasing then
         KerapacCore.useVolleyOfSoulsAbility()
         return
     end
 
-    if Data.extraAbilities.touchOfDeathAbility.AB.cooldown_timer <= 0 then
+    if Data.extraAbilities.bloatAbility.AB.cooldown_timer <= 0 
+    and Data.extraAbilities.bloatAbility.AB.enabled 
+    and API.GetAddreline_() >= Data.extraAbilities.bloatAbility.threshold 
+    and not API.Buffbar_GetIDstatus(Data.deathSparkReady).found
+    and not KerapacCore.hasBloatDebuff then
+        KerapacCore.useBloatAbility()
+        return
+    end
+
+    if Data.extraAbilities.touchOfDeathAbility.AB.cooldown_timer <= 0
+    and Data.extraAbilities.touchOfDeathAbility.AB.enabled 
+    and not API.Buffbar_GetIDstatus(Data.deathSparkReady).found then
         KerapacCore.useTouchOfDeathAbility()
         return
     end
 
-    if Data.extraAbilities.soulSapAbility.AB.cooldown_timer <= 0 then
+    if Data.extraAbilities.soulSapAbility.AB.cooldown_timer <= 0
+    and Data.extraAbilities.soulSapAbility.AB.enabled 
+    and not API.Buffbar_GetIDstatus(Data.deathSparkReady).found then
         KerapacCore.useSoulSapAbility()
         return
     end
 
-    if Data.extraAbilities.sacrificeAbility.AB.cooldown_timer <= 0 and not KerapacCore.isPhasing then
+    if Data.extraAbilities.sacrificeAbility.AB.cooldown_timer <= 0 
+    and Data.extraAbilities.sacrificeAbility.AB.enabled 
+    and not API.Buffbar_GetIDstatus(Data.deathSparkReady).found
+    and not KerapacCore.isPhasing then
         KerapacCore.useSacrificeAbility()
         return
     end
 
     if Data.extraAbilities.resonanceAbility.AB.cooldown_timer > 0
+    and Data.extraAbilities.preparationAbility.AB.enabled 
     and Data.extraAbilities.preparationAbility.AB.cooldown_timer <= 0 then
         KerapacCore.usePreparationAbility()
         return
@@ -1335,7 +1445,7 @@ function KerapacCore.castNextAbility()
 
     KerapacCore.log("Literally nothing to do so guess I'll do an auto attack")
 end
-
+print(Data.extraAbilities.immortalityAbility.AB.enabled)
 function KerapacCore.handleResonance()
     if not KerapacCore.isResonanceEnabled and not (API.Get_tick() - KerapacCore.resonanceTicks > 2) then 
         if not KerapacCore.isMagePrayEnabled and not KerapacCore.isMeleePrayEnabled and KerapacCore.isSoulSplitEnabled then
@@ -1481,7 +1591,42 @@ function KerapacCore.HandleBanking()
     KerapacCore.isBanking = true
 end
 
+function KerapacCore.checkForZukCape()
+    for i = 1, #API.Container_Get_all(94) do
+        if API.Container_Get_all(94)[i].item_id == 55189 or API.Container_Get_all(94)[i].item_id == 52504 then
+            Data.extraAbilities.deathSkullsAbility.threshold = 60
+            KerapacCore.log("Ooo look at you, fancy boy")
+            break
+        end
+    end
+end
+
+function KerapacCore.checkWeaponType()
+    local equippedItems = API.Container_Get_all(94)
+    for i = 1, #equippedItems do
+        local itemId = equippedItems[i].item_id
+        
+        for j = 1, #Data.deathGuardIds do
+            if itemId == Data.deathGuardIds[j] then
+                KerapacCore.hasDeathGuardEquipped = true
+                KerapacCore.log("I mean it's allright")
+                break
+            end
+        end
+
+        for k = 1, #Data.omniGuardIds do
+            if itemId == Data.omniGuardIds[k] then
+                KerapacCore.hasOmniGuardEquipped = true
+                KerapacCore.log("That's an upgrade")
+                break
+            end
+        end
+    end
+end
+
 function KerapacCore.prepareForBattle()
+    KerapacCore.checkWeaponType()
+    KerapacCore.checkForZukCape()
     KerapacCore.summonFamiliar()
     KerapacCore.renewFamiliar()
     KerapacCore.setupAutoFire()
@@ -1503,7 +1648,7 @@ function KerapacCore.prepareForBattle()
 end
 
 function KerapacCore.handleAdrenalineCrystal()
-    if KerapacCore.isMaxAdrenaline then return end
+    if KerapacCore.isMaxAdrenaline or not KerapacCore.adrenCheckbox.box_ticked then return end
     if API.GetAddreline_() ~= 100 then
         Interact:Object("Adrenaline crystal", "Channel", 60)
         API.WaitUntilMovingandAnimEnds(10, 4)
@@ -1620,66 +1765,6 @@ function KerapacCore.RemoveDuplicates(tbl)
     return result
 end
 
-function KerapacCore.CheckTables(tbl1, tbl2)
-    if type(tbl1) == "string" then tbl1 = {tbl1} end
-    if type(tbl2) == "string" then tbl2 = {tbl2} end
-    
-    if type(tbl1) ~= "table" or type(tbl2) ~= "table" then
-        return false
-    end
-
-    local freq1, freq2 = {}, {}
-    
-    for _, v in ipairs(tbl1) do
-        if type(v) == "string" then
-            local normalized = string.gsub(v, "%s+", " ")
-            normalized = string.gsub(normalized, "^%s*(.-)%s*$", "%1")
-            freq1[normalized] = (freq1[normalized] or 0) + 1
-        else
-            freq1[v] = (freq1[v] or 0) + 1
-        end
-    end
-    
-    for _, v in ipairs(tbl2) do
-        if type(v) == "string" then
-            local normalized = string.gsub(v, "%s+", " ")
-            normalized = string.gsub(normalized, "^%s*(.-)%s*$", "%1")
-            freq2[normalized] = (freq2[normalized] or 0) + 1
-        else
-            freq2[v] = (freq2[v] or 0) + 1
-        end
-    end
-    
-    print("Table 1 frequencies:")
-    for k, v in pairs(freq1) do print("  ", k, v) end
-    print("Table 2 frequencies:")
-    for k, v in pairs(freq2) do print("  ", k, v) end
-    
-    print("Table 1:")
-    for i, v in ipairs(tbl1) do
-        print(i, type(v), string.format("%q", tostring(v)))
-    end
-    
-    print("Table 2:")
-    for i, v in ipairs(tbl2) do
-        print(i, type(v), string.format("%q", tostring(v)))
-    end
-    
-    for k, v in pairs(freq1) do
-        if freq2[k] ~= v then
-            return false
-        end
-    end
-    
-    for k, v in pairs(freq2) do
-        if freq1[k] ~= v then
-            return false
-        end
-    end
-    
-    return true
-end
-
 function KerapacCore.WaitForPartyToBeComplete()
     KerapacCore.log("Waiting for team to be complete")
     local players = API.GetAllObjArray1({1}, 30, {2})
@@ -1698,7 +1783,6 @@ function KerapacCore.WaitForPartyToBeComplete()
     if #playersInVicinity == #Data.partyMembers then
         KerapacCore.isTeamComplete = true
     end
-    --KerapacCore.isTeamComplete = KerapacCore.CheckTables(playersInVicinity, Data.partyMembers)
     KerapacCore.log("Found all team members: "..tostring(KerapacCore.isTeamComplete))
     KerapacCore.sleepTickRandom(1)
 end
@@ -1708,13 +1792,6 @@ function KerapacCore.BeginFight()
     KerapacCore.playerPosition = API.PlayerCoord()
     KerapacCore.centerOfArenaPosition = FFPOINT.new(KerapacCore.playerPosition.x - 7, KerapacCore.playerPosition.y, 0)
     KerapacCore.startLocationOfArena = FFPOINT.new(KerapacCore.playerPosition.x - 25, KerapacCore.playerPosition.y, 0)
-
-    for i = 1, #API.Container_Get_all(94) do
-        if API.Container_Get_all(94)[i].item_id == 55189 or API.Container_Get_all(94)[i].item_id == 52504 then
-            Data.extraAbilities.deathSkullsAbility.threshold = 60
-            KerapacCore.log("Ooo look at you, fancy boy")
-        end
-    end
         
     KerapacCore.log("Reset compass")
     API.DoAction_Interface(0xffffffff, 0xffffffff, 1, 1919, 2, -1, API.OFF_ACT_GeneralInterface_route)
@@ -1742,6 +1819,7 @@ function KerapacCore.checkKerapacExists()
     if KerapacCore.getKerapacInformation().Action == "Attack" then
         KerapacCore.isInBattle = true
         KerapacCore.isFightStarted = true
+        KerapacCore.canAttack = true
         KerapacCore.enableMagePray()
         KerapacCore.attackKerapac()
         KerapacCore.log("Fight started")
@@ -1770,7 +1848,7 @@ end
 
 function KerapacCore.handleBossLoot()
     local guaranteedDrop = {51804, 51805}
-    local lootPiles = API.GetAllObjArray1(guaranteedDrop, 20, {3})
+    local lootPiles = API.GetAllObjArray1(guaranteedDrop, 120, {3})
     
     if #lootPiles > 0 then
         if not API.LootWindowOpen_2() then 
@@ -1840,6 +1918,7 @@ function KerapacCore.handleBossDeath()
     KerapacCore.disablePassivePrayer()
     KerapacCore.isInBattle = false
     KerapacCore.isTimeToLoot = true
+    KerapacCore.canAttack = false
     
     if KerapacCore.playerPosition then
         local lootPosition = FFPOINT.new(KerapacCore.playerPosition.x + Data.lootPosition, KerapacCore.playerPosition.y, 0)
@@ -1899,7 +1978,7 @@ function KerapacCore.handleCombat(state)
         end
         
         if state == Data.bossStateEnum.TEAR_RIFT_ATTACK_MOVE.name and KerapacCore.isRiftDodged then
-            KerapacCore.sleepTickRandom(2)
+            KerapacCore.sleepTickRandom(3)
             KerapacCore.attackKerapac()
             KerapacCore.isRiftDodged = false
             KerapacCore.canAttack = true
@@ -1971,6 +2050,7 @@ function KerapacCore.handleBossReset()
     KerapacCore.isResonanceEnabled = false
     KerapacCore.isMagePrayEnabled = false
     KerapacCore.isSoulSplitEnabled = false
+    KerapacCore.isMaxAdrenaline = false
     
     KerapacCore.hasOverload = false
     KerapacCore.hasWeaponPoison = false
