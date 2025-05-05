@@ -44,6 +44,7 @@ local KerapacCore = {
     
     hasOverload = false,
     hasWeaponPoison = false,
+    hasAdrenalinePotion = false,
     hasDarkness = false,
     hasInvokeDeath = false,
     hasSplitSoul = false,
@@ -262,6 +263,19 @@ function KerapacCore.whichWeaponPoison()
     return weaponPoison
 end
 
+function KerapacCore.whichAdrenalinePotion()
+    local adrenalinePotion = ""
+    local foundadrenalinePotion = false
+    for i = 1, #Data.adrenalinePotionItems do
+        foundadrenalinePotion = Inventory:Contains(Data.adrenalinePotionItems[i])
+        if foundadrenalinePotion then
+            adrenalinePotion = Data.adrenalinePotionItems[i]
+            break
+        end
+    end
+    return adrenalinePotion
+end
+
 function KerapacCore.whichFamiliar()
     local familiar = ""
     local foundFamiliar = false
@@ -359,6 +373,7 @@ function KerapacCore.checkAvailableBuffs()
     local splitSoulOnBar = false
     KerapacCore.hasOverload = KerapacCore.whichOverload() ~= ""
     KerapacCore.hasWeaponPoison = KerapacCore.whichWeaponPoison() ~= ""
+    KerapacCore.hasAdrenalinePotion = KerapacCore.whichAdrenalinePotion() ~= ""
     KerapacCore.hasDebilitate = Data.extraAbilities.debilitateAbility.AB.slot ~= 0
     KerapacCore.hasDevotion = Data.extraAbilities.devotionAbility.AB.slot ~= 0
     KerapacCore.hasReflect = Data.extraAbilities.reflectAbility.AB.slot ~= 0
@@ -848,10 +863,10 @@ function KerapacCore.eatFood()
         end
         if Inventory:Contains("Enhanced Excalibur") and
            not API.DeBuffbar_GetIDstatus(Data.extraItems.excalibur, false).found then
-            Inventory:DoAction("Enhanced Excalibur", 1, API.OFF_ACT_GeneralInterface_route)
+            API.DoAction_Ability_Direct("Enhanced Excalibur", 1, API.OFF_ACT_GeneralInterface_route)
         elseif Inventory:Contains("Augmented enhanced Excalibur") and
                not API.DeBuffbar_GetIDstatus(Data.extraItems.excalibur, false).found then
-                Inventory:DoAction("Augmented enhanced Excalibur", 1, API.OFF_ACT_GeneralInterface_route)
+                API.DoAction_Ability_Direct("Augmented enhanced Excalibur", 1, API.OFF_ACT_GeneralInterface_route)
         end
         KerapacCore.log("Eating a lot of food")
         KerapacCore.eatFoodTicks = API.Get_tick()
@@ -949,6 +964,29 @@ function KerapacCore.drinkWeaponPoison()
     end
     API.DoAction_Ability_Direct(weaponPoisonAB, 1, API.OFF_ACT_GeneralInterface_route)
     KerapacCore.log("Slurping a weapon poison")
+    KerapacCore.drinkRestoreTicks = API.Get_tick()
+end
+
+function KerapacCore.drinkAdrenalinePotion()
+    if not Inventory:ContainsAny(Data.adrenalinePotionItems) or 
+    API.Buffbar_GetIDstatus(26094).found or
+    API.Get_tick() - KerapacCore.drinkRestoreTicks <= Data.drinkCooldown then return end
+
+    local adrenalineAB = nil
+    if string.find(KerapacCore.whichAdrenalinePotion(), "Adrenaline renewal") then
+        adrenalineAB = API.GetABs_name1("drenaline renewal")
+    elseif string.find(KerapacCore.whichAdrenalinePotion(), "Adrenaline potion")  then
+        adrenalineAB = API.GetABs_name1("Adrenaline potion")
+    elseif string.find(KerapacCore.whichAdrenalinePotion(), "Super adrenaline potion")  then
+        adrenalineAB = API.GetABs_name1("Super adrenaline potion")
+    elseif string.find(KerapacCore.whichAdrenalinePotion(), "Replenishment potion")  then
+        adrenalineAB = API.GetABs_name1("Replenishment potion")
+    elseif string.find(KerapacCore.whichAdrenalinePotion(), "Enhanced replenishment potion")  then
+        adrenalineAB = API.GetABs_name1("Enhanced replenishment potion")
+    end
+
+    API.DoAction_Ability_Direct(adrenalineAB, 1, API.OFF_ACT_GeneralInterface_route)
+    KerapacCore.log("Slurping an adrenaline potion")
     KerapacCore.drinkRestoreTicks = API.Get_tick()
 end
 
@@ -1162,6 +1200,8 @@ function KerapacCore.castNextAbility()
             end
         end
         KerapacCore.useDeathSkullsAbility()
+        KerapacCore.sleepTickRandom(1)
+        KerapacCore.drinkAdrenalinePotion()
         return
     end
 
@@ -1275,6 +1315,7 @@ function KerapacCore.castNextAbility()
             end
         end
         KerapacCore.useLivingDeathAbility()
+        KerapacCore.drinkAdrenalinePotion()
         return
     end
 
@@ -1492,7 +1533,7 @@ function KerapacCore.managePlayer()
 end
 
 function KerapacCore.manageBuffs()
-    if API.Get_tick() - KerapacCore.buffCheckCooldown <= 10  then return end
+    if API.Get_tick() - KerapacCore.buffCheckCooldown <= 4  then return end
 
     if KerapacCore.hasOverload then
         KerapacCore.drinkOverload()
@@ -2092,6 +2133,7 @@ function KerapacCore.handleBossReset()
     KerapacCore.isMaxAdrenaline = false
     
     KerapacCore.hasOverload = false
+    KerapacCore.hasAdrenalinePotion = false
     KerapacCore.hasWeaponPoison = false
     KerapacCore.hasDebilitate = false
     KerapacCore.hasDevotion = false

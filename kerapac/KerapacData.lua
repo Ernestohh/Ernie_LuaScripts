@@ -99,6 +99,17 @@ local summoningPouches = {
     "Binding contract (blood reaver)", "Binding contract (hellhound)"
 }
 
+local adrenalinePotionItems = {
+    "Adrenaline potion (1)", "Adrenaline potion (2)", "Adrenaline potion (3)", "Adrenaline potion (4)",
+    "Adrenaline flask (1)", "Adrenaline flask (2)", "Adrenaline flask (3)", "Adrenaline flask (4)", "Adrenaline flask (5)", "Adrenaline flask (6)",
+    "Super adrenaline potion (1)", "Super adrenaline potion (2)", "Super adrenaline potion (3)", "Super adrenaline potion (4)",
+    "Super adrenaline flask (1)", "Super adrenaline flask (2)", "Super adrenaline flask (3)", "Super adrenaline flask (4)", "Super adrenaline flask (5)", "Super adrenaline flask (6)",
+    "Adrenaline renewal potion (1)", "Adrenaline renewal potion (2)", "Adrenaline renewal potion (3)", "Adrenaline renewal potion (4)",
+    "Adrenaline renewal flask (1)", "Adrenaline renewal flask (2)", "Adrenaline renewal flask (3)", "Adrenaline renewal flask (4)", "Adrenaline renewal flask (5)", "Adrenaline renewal flask (6)",
+    "Replenishment potion (1)", "Replenishment potion (2)", "Replenishment potion (3)", "Replenishment potion (4)", "Replenishment potion (5)", "Replenishment potion (6)",
+    "Enhanced replenishment potion (1)", "Enhanced replenishment potion (2)", "Enhanced replenishment potion (3)", "Enhanced replenishment potion (4)", "Enhanced replenishment potion (5)", "Enhanced replenishment potion (6)"
+}
+
 local extraItems = {
         excalibur = 14632,
         augmentedExcalibur = 36619
@@ -528,6 +539,7 @@ return {
     prayerRestoreItems = prayerRestoreItems,
     overloadItems = overloadItems,
     weaponPoisonItems = weaponPoisonItems,
+    adrenalinePotionItems = adrenalinePotionItems,
     summoningPouches = summoningPouches,
     extraItems = extraItems,
     extraAbilities = extraAbilities,
