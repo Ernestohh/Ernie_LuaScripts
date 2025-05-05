@@ -1200,8 +1200,6 @@ function KerapacCore.castNextAbility()
             end
         end
         KerapacCore.useDeathSkullsAbility()
-        KerapacCore.sleepTickRandom(1)
-        KerapacCore.drinkAdrenalinePotion()
         return
     end
 
@@ -1315,6 +1313,7 @@ function KerapacCore.castNextAbility()
             end
         end
         KerapacCore.useLivingDeathAbility()
+        KerapacCore.sleepTickRandom(1)
         KerapacCore.drinkAdrenalinePotion()
         return
     end
