@@ -836,7 +836,7 @@ function KerapacCore.eatFood()
     local hasEmergencyDrink = Inventory:ContainsAny(Data.emergencyDrinkItems)
     local emergencyFoodAB = nil
     local emergencyDrinkAB = nil
-    local eatFoodAB = API.GetABs_name1(KerapacCore.whichFood())
+    local eatFoodAB = API.GetABs_name1("Eat Food")
     if(string.find(string.lower(KerapacCore.whichEmergencyFood()), "blue blubber")) then
         emergencyFoodAB = API.GetABs_name1("Blue blubber jellyfish")
     elseif(string.find(string.lower(KerapacCore.whichEmergencyFood()), "green blubber")) then
@@ -1073,9 +1073,9 @@ function KerapacCore.HandlePhase4()
     for i = 1, #echoes do
         if echoes[i].Anim ~= 33493 
         or echoes[i].Life ~= 100000
-        and echoes[i].Anim ~= Data.bossStateEnum.JUMP_ATTACK_COMMENCE
+        or( echoes[i].Anim ~= Data.bossStateEnum.JUMP_ATTACK_COMMENCE
         and echoes[i].Anim ~= Data.bossStateEnum.JUMP_ATTACK_IN_AIR
-        and echoes[i].Anim ~= Data.bossStateEnum.JUMP_ATTACK_LANDED then
+        and echoes[i].Anim ~= Data.bossStateEnum.JUMP_ATTACK_LANDED) then
             table.insert(killableEchoes, echoes[i])
         end
     end
@@ -1199,8 +1199,7 @@ function KerapacCore.castNextAbility()
     and not KerapacCore.isPhasing
     and KerapacCore.kerapacPhase >= 4
     and API.GetAddreline_() >= Data.extraAbilities.immortalityAbility.threshold then
-        if KerapacCore.kerapacPhase >= 4 
-        and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
+        if API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
             if API.GetHPrecent() > 70 then
                 KerapacCore.useWarpTime()
             else
@@ -1229,8 +1228,7 @@ function KerapacCore.castNextAbility()
     and KerapacCore.islightningPhase
     and not KerapacCore.isPhasing
     and API.GetAddreline_() >= Data.extraAbilities.barricadeAbility.threshold then
-        if KerapacCore.kerapacPhase >= 4 
-        and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
+        if API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
             if API.GetHPrecent() > 70 then
                 KerapacCore.useWarpTime()
             else
@@ -1240,7 +1238,8 @@ function KerapacCore.castNextAbility()
                 Data.emergencyEatThreshold = oldThreshold
                 KerapacCore.useWarpTime()
             end
-        elseif KerapacCore.islightningPhase then
+        end
+        if KerapacCore.islightningPhase or KerapacCore.kerapacPhase >= 4 then
             KerapacCore.useBarricadeAbility()
             KerapacCore.sleepTickRandom(1)
             KerapacCore.drinkAdrenalinePotion()
@@ -1263,8 +1262,7 @@ function KerapacCore.castNextAbility()
     and not KerapacCore.isPhasing
     and KerapacCore.kerapacPhase >= 4
     and API.GetAddreline_() >= Data.extraAbilities.rejuvenateAbility.threshold then
-        if KerapacCore.kerapacPhase >= 4 
-        and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
+        if API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
             if API.GetHPrecent() > 70 then
                 KerapacCore.useWarpTime()
             else
@@ -1335,7 +1333,8 @@ function KerapacCore.castNextAbility()
                 Data.emergencyEatThreshold = oldThreshold
                 KerapacCore.useWarpTime()
             end
-        elseif KerapacCore.islightningPhase then
+        end
+        if KerapacCore.islightningPhase or KerapacCore.kerapacPhase >= 4 then
             KerapacCore.useDebilitateAbility()
             KerapacCore.sleepTickRandom(1)
             KerapacCore.drinkAdrenalinePotion()
@@ -1367,7 +1366,8 @@ function KerapacCore.castNextAbility()
                 Data.emergencyEatThreshold = oldThreshold
                 KerapacCore.useWarpTime()
             end
-        elseif KerapacCore.islightningPhase then
+        end
+        if KerapacCore.islightningPhase or KerapacCore.kerapacPhase >= 4 then
             KerapacCore.useReflectAbility()
             KerapacCore.sleepTickRandom(1)
             KerapacCore.drinkAdrenalinePotion()
