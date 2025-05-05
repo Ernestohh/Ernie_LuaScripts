@@ -81,7 +81,6 @@ local KerapacCore = {
     summoningSpecialTicks = API.Get_tick(),
     removeFromTableTicks = API.Get_tick(),
     lightningDirections = {},
-    killableEchoes = {},
     
     kerapacPhase = 1,
     kerapacEcho1 = nil,
@@ -994,8 +993,8 @@ end
 
 function KerapacCore.setupPlayerTank(clones)
     if KerapacCore.isPartyLeader or not KerapacCore.isInParty then 
-        API.DoAction_Dive_Tile(KerapacCore.kerapacEcho2)
-        API.DoAction_Tile(KerapacCore.kerapacEcho2)
+        API.DoAction_Dive_Tile(KerapacCore.kerapacEcho1)
+        API.DoAction_Tile(KerapacCore.kerapacEcho1)
         KerapacCore.sleepTickRandom(5)
         API.DoAction_NPC(0x2a, API.OFF_ACT_InteractNPC_route, { clones[1].Id }, 10)
         KerapacCore.sleepTickRandom(3)
@@ -1032,6 +1031,7 @@ function KerapacCore.HandlePhase4()
     local killableEchoes = {}
     for i = 1, #echoes do
         if echoes[i].Anim ~= 33493 
+        and echoes[i].Life ~= 100000
         and echoes[i].Anim ~= Data.bossStateEnum.JUMP_ATTACK_COMMENCE
         and echoes[i].Anim ~= Data.bossStateEnum.JUMP_ATTACK_IN_AIR
         and echoes[i].Anim ~= Data.bossStateEnum.JUMP_ATTACK_LANDED then
@@ -1040,32 +1040,28 @@ function KerapacCore.HandlePhase4()
     end
     local targetInfo = API.ReadTargetInfo() 
 
-    if #killableEchoes == 3 and targetInfo.Target_Name ~= "Echo of Kerapac" then
-        API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { killableEchoes[1].Id }, 10)
+    if targetInfo.Target_Name ~= "Echo of Kerapac" then
+        API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { echoes[1].Id }, 10)
     elseif #killableEchoes == 2 and targetInfo.Hitpoints == 100000 then
         KerapacCore.log("amount of killable echoes "..#killableEchoes)
-        API.DoAction_Tile(KerapacCore.kerapacEcho1)
+        API.DoAction_Dive_Tile(WPOINT.new(math.floor(killableEchoes[2].TileX)/512, math.floor(killableEchoes[2].TileY)/512,math.floor(killableEchoes[2].TileZ)/512))
         KerapacCore.sleepTickRandom(2)
-        API.DoAction_Ability_Direct(surgeAB, 1, API.OFF_ACT_GeneralInterface_route)
-        API.DoAction_Tile(KerapacCore.kerapacEcho1)
-        KerapacCore.sleepTickRandom(1)
-        API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { killableEchoes[1].Id }, 10)
+        API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { killableEchoes[2].Id }, 10)
     elseif #killableEchoes == 1 and targetInfo.Hitpoints == 100000 then
         KerapacCore.log("amount of killable echoes "..#killableEchoes)
-        API.DoAction_Tile(KerapacCore.kerapacEcho2)
+        API.DoAction_Dive_Tile(WPOINT.new(math.floor(killableEchoes[1].TileX)/512, math.floor(killableEchoes[1].TileY)/512,math.floor(killableEchoes[1].TileZ)/512))
         KerapacCore.sleepTickRandom(2)
-        API.DoAction_Ability_Direct(surgeAB, 1, API.OFF_ACT_GeneralInterface_route)
-        API.DoAction_Tile(KerapacCore.kerapacEcho2)
-        KerapacCore.sleepTickRandom(1)
-        API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { killableEchoes[1].Id }, 10)
+        API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { killableEchoes[1].Id }, 100)
     elseif #killableEchoes == 0 then
         KerapacCore.attackKerapac()
     end
 
-    if(#killableEchoes > 0) then
+    if(#killableEchoes > 0) and targetInfo.Hitpoints ~= 100000 then
         KerapacCore.applyVulnerability()
         if not API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { killableEchoes[1].Id }, 10) then
             API.DoAction_Dive_Tile(WPOINT.new(math.floor(killableEchoes[1].TileX)/512, math.floor(killableEchoes[1].TileY)/512,math.floor(killableEchoes[1].TileZ)/512))
+            KerapacCore.sleepTickRandom(0)
+            API.DoAction_Tile(WPOINT.new(math.floor(killableEchoes[1].TileX)/512, math.floor(killableEchoes[1].TileY)/512,math.floor(killableEchoes[1].TileZ)/512))
             API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { killableEchoes[1].Id }, 10)
         end
     end
@@ -1977,11 +1973,10 @@ function KerapacCore.handleBossPhase()
         KerapacCore.log("Kerapac information not available")
         return
     end
-    
-    if kerapacInfo.Life <= 0 then
+
+    if kerapacInfo.Life <= 0 and KerapacCore.kerapacPhase >= 4 then
         KerapacCore.log("Preparing to loot")
         KerapacCore.handleBossDeath()
-        return
     end
     
     KerapacCore.handlePhaseTransitions(kerapacInfo.Life)
@@ -2013,7 +2008,7 @@ function KerapacCore.handleCombat(state)
             end
             KerapacCore.canAttack = false
             KerapacCore.sleepTickRandom(2)
-            API.DoAction_Dive_Tile(WPOINT.new(math.floor(KerapacCore.getKerapacPositionFFPOINT().x), math.floor(KerapacCore.getKerapacPositionFFPOINT().y), math.floor(KerapacCore.getKerapacPositionFFPOINT().z)))
+            API.DoAction_Dive_Tile(WPOINT.new(math.floor(KerapacCore.getKerapacInformation().TileX / 512),math.floor(KerapacCore.getKerapacInformation().TileY / 512),math.floor(KerapacCore.getKerapacInformation().TileZ / 512)))
             KerapacCore.enableMagePray()
             KerapacCore.isRiftDodged = true
             KerapacCore.log("Moved player under Kerapac")
