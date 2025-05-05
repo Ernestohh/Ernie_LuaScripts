@@ -863,10 +863,12 @@ function KerapacCore.eatFood()
         end
         if Inventory:Contains("Enhanced Excalibur") and
            not API.DeBuffbar_GetIDstatus(Data.extraItems.excalibur, false).found then
-            API.DoAction_Ability_Direct("Enhanced Excalibur", 1, API.OFF_ACT_GeneralInterface_route)
+            local excal = API.GetABs_name1("Enhanced Excalibur")
+            API.DoAction_Ability_Direct(excal,1, API.OFF_ACT_GeneralInterface_route)
         elseif Inventory:Contains("Augmented enhanced Excalibur") and
                not API.DeBuffbar_GetIDstatus(Data.extraItems.excalibur, false).found then
-                API.DoAction_Ability_Direct("Augmented enhanced Excalibur", 1, API.OFF_ACT_GeneralInterface_route)
+                local excal = API.GetABs_name1("Augmented enhanced Excalibur")
+                API.DoAction_Ability_Direct(excal,1, API.OFF_ACT_GeneralInterface_route)
         end
         KerapacCore.log("Eating a lot of food")
         KerapacCore.eatFoodTicks = API.Get_tick()
@@ -1070,7 +1072,7 @@ function KerapacCore.HandlePhase4()
     local killableEchoes = {}
     for i = 1, #echoes do
         if echoes[i].Anim ~= 33493 
-        and echoes[i].Life ~= 100000
+        or echoes[i].Life ~= 100000
         and echoes[i].Anim ~= Data.bossStateEnum.JUMP_ATTACK_COMMENCE
         and echoes[i].Anim ~= Data.bossStateEnum.JUMP_ATTACK_IN_AIR
         and echoes[i].Anim ~= Data.bossStateEnum.JUMP_ATTACK_LANDED then
@@ -1200,6 +1202,8 @@ function KerapacCore.castNextAbility()
             end
         end
         KerapacCore.useDeathSkullsAbility()
+        KerapacCore.sleepTickRandom(1)
+        KerapacCore.drinkAdrenalinePotion()
         return
     end
 
