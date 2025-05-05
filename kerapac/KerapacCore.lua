@@ -836,7 +836,7 @@ function KerapacCore.eatFood()
     local hasEmergencyDrink = Inventory:ContainsAny(Data.emergencyDrinkItems)
     local emergencyFoodAB = nil
     local emergencyDrinkAB = nil
-    local eatFoodAB = API.GetABs_name1("Eat Food")
+    local eatFoodAB = API.GetABs_name1(KerapacCore.whichFood())
     if(string.find(string.lower(KerapacCore.whichEmergencyFood()), "blue blubber")) then
         emergencyFoodAB = API.GetABs_name1("Blue blubber jellyfish")
     elseif(string.find(string.lower(KerapacCore.whichEmergencyFood()), "green blubber")) then
@@ -1184,29 +1184,6 @@ function KerapacCore.castNextAbility()
         return
     end
 
-    if Data.extraAbilities.deathSkullsAbility.AB.cooldown_timer <= 0 
-    and Data.extraAbilities.deathSkullsAbility.AB.enabled 
-    and API.GetAddreline_() >= Data.extraAbilities.deathSkullsAbility.threshold 
-    and not API.Buffbar_GetIDstatus(Data.deathSparkReady).found
-    and not KerapacCore.isPhasing then
-        if KerapacCore.kerapacPhase >= 4 
-        and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
-            if API.GetHPrecent() > 70 then
-                KerapacCore.useWarpTime()
-            else
-                local oldThreshold = Data.emergencyEatThreshold
-                Data.emergencyEatThreshold = API.GetHPrecent()+10
-                KerapacCore.eatFood()
-                Data.emergencyEatThreshold = oldThreshold
-                KerapacCore.useWarpTime()
-            end
-        end
-        KerapacCore.useDeathSkullsAbility()
-        KerapacCore.sleepTickRandom(1)
-        KerapacCore.drinkAdrenalinePotion()
-        return
-    end
-
     if Data.extraAbilities.immortalityAbility.AB.cooldown_timer <= 0 
     and Data.extraAbilities.immortalityAbility.AB.enabled 
     and not API.Buffbar_GetIDstatus(Data.extraAbilities.debilitateAbility.debuffId).found
@@ -1263,9 +1240,12 @@ function KerapacCore.castNextAbility()
                 Data.emergencyEatThreshold = oldThreshold
                 KerapacCore.useWarpTime()
             end
+        elseif KerapacCore.islightningPhase then
+            KerapacCore.useBarricadeAbility()
+            KerapacCore.sleepTickRandom(1)
+            KerapacCore.drinkAdrenalinePotion()
+            return
         end
-        KerapacCore.useBarricadeAbility()
-        return
     end
 
     if Data.extraAbilities.rejuvenateAbility.AB.cooldown_timer <= 0 
@@ -1296,27 +1276,6 @@ function KerapacCore.castNextAbility()
             end
         end
         KerapacCore.useRejuvenateAbility()
-        return
-    end
-
-    if Data.extraAbilities.livingDeathAbility.AB.cooldown_timer <= 0 
-    and Data.extraAbilities.livingDeathAbility.AB.enabled 
-    and API.GetAddreline_() >= Data.extraAbilities.livingDeathAbility.threshold 
-    and not KerapacCore.isPhasing 
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.livingDeathAbility.buffId).found then
-        if KerapacCore.kerapacPhase >= 4 
-        and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
-            if API.GetHPrecent() > 70 then
-                KerapacCore.useWarpTime()
-            else
-                local oldThreshold = Data.emergencyEatThreshold
-                Data.emergencyEatThreshold = API.GetHPrecent()+10
-                KerapacCore.eatFood()
-                Data.emergencyEatThreshold = oldThreshold
-                KerapacCore.useWarpTime()
-            end
-        end
-        KerapacCore.useLivingDeathAbility()
         KerapacCore.sleepTickRandom(1)
         KerapacCore.drinkAdrenalinePotion()
         return
@@ -1333,7 +1292,6 @@ function KerapacCore.castNextAbility()
     and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_COMMENCE
     and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_IN_AIR
     and KerapacCore.currentState ~= Data.bossStateEnum.JUMP_ATTACK_LANDED
-    and not KerapacCore.islightningPhase
     and not KerapacCore.isPhasing
     and API.GetAddreline_() >= Data.extraAbilities.devotionAbility.threshold then
         if KerapacCore.kerapacPhase >= 4 
@@ -1348,7 +1306,9 @@ function KerapacCore.castNextAbility()
                 KerapacCore.useWarpTime()
             end
         end
-        KerapacCore.useDevotionAbility()
+            KerapacCore.useDevotionAbility()
+            KerapacCore.sleepTickRandom(1)
+            KerapacCore.drinkAdrenalinePotion()
         return
     end
     if Data.extraAbilities.debilitateAbility.AB.cooldown_timer <= 0 
@@ -1377,6 +1337,8 @@ function KerapacCore.castNextAbility()
             end
         elseif KerapacCore.islightningPhase then
             KerapacCore.useDebilitateAbility()
+            KerapacCore.sleepTickRandom(1)
+            KerapacCore.drinkAdrenalinePotion()
             return 
         end
     end
@@ -1407,18 +1369,70 @@ function KerapacCore.castNextAbility()
             end
         elseif KerapacCore.islightningPhase then
             KerapacCore.useReflectAbility()
+            KerapacCore.sleepTickRandom(1)
+            KerapacCore.drinkAdrenalinePotion()
             return
         end
+    end
+
+    if Data.extraAbilities.deathSkullsAbility.AB.cooldown_timer <= 0 
+    and Data.extraAbilities.deathSkullsAbility.AB.enabled 
+    and API.GetAddreline_() >= Data.extraAbilities.deathSkullsAbility.threshold 
+    and not API.Buffbar_GetIDstatus(Data.deathSparkReady).found
+    and not KerapacCore.isPhasing then
+        if KerapacCore.kerapacPhase >= 4 
+        and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
+            if API.GetHPrecent() > 70 then
+                KerapacCore.useWarpTime()
+            else
+                local oldThreshold = Data.emergencyEatThreshold
+                Data.emergencyEatThreshold = API.GetHPrecent()+10
+                KerapacCore.eatFood()
+                Data.emergencyEatThreshold = oldThreshold
+                KerapacCore.useWarpTime()
+            end
+        end
+        if KerapacCore.kerapacPhase ~= 3 and not KerapacCore.islightningPhase then
+            KerapacCore.useDeathSkullsAbility()
+            KerapacCore.sleepTickRandom(1)
+            KerapacCore.drinkAdrenalinePotion()
+            return
+        end
+    end
+
+    if Data.extraAbilities.livingDeathAbility.AB.cooldown_timer <= 0 
+    and Data.extraAbilities.livingDeathAbility.AB.enabled 
+    and API.GetAddreline_() >= Data.extraAbilities.livingDeathAbility.threshold 
+    and not KerapacCore.isPhasing 
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.livingDeathAbility.buffId).found then
+        if KerapacCore.kerapacPhase >= 4 
+        and API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time" then
+            if API.GetHPrecent() > 70 then
+                KerapacCore.useWarpTime()
+            else
+                local oldThreshold = Data.emergencyEatThreshold
+                Data.emergencyEatThreshold = API.GetHPrecent()+10
+                KerapacCore.eatFood()
+                Data.emergencyEatThreshold = oldThreshold
+                KerapacCore.useWarpTime()
+            end
+        end
+        KerapacCore.useLivingDeathAbility()
+        KerapacCore.sleepTickRandom(1)
+        KerapacCore.drinkAdrenalinePotion()
+        return
     end
 
     if not API.Buffbar_GetIDstatus(55480).found 
     and not API.DeBuffbar_GetIDstatus(55480).found
     and not KerapacCore.isPhasing
     and API.GetAddreline_() >= 30 then
-        if KerapacCore.hasOmniGuardEquipped and API.GetABs_name1("Weapon Special Attack").enabled then
-            KerapacCore.useSpecialAttackAbility()
-        elseif API.GetABs_name1("Essence of Finality").enabled then
-            KerapacCore.useEssenceOfFinalityAbility()
+        if KerapacCore.kerapacPhase ~= 3 and not KerapacCore.islightningPhase then
+            if KerapacCore.hasOmniGuardEquipped and API.GetABs_name1("Weapon Special Attack").enabled then
+                KerapacCore.useSpecialAttackAbility()
+            elseif API.GetABs_name1("Essence of Finality").enabled then
+                KerapacCore.useEssenceOfFinalityAbility()
+            end
         end
     end
 
@@ -1426,10 +1440,12 @@ function KerapacCore.castNextAbility()
     and not KerapacCore.isPhasing
     and KerapacCore.necrosisStacks > 5
     and API.GetAddreline_() >= 25 then
-        if KerapacCore.hasDeathGuardEquipped and API.GetABs_name1("Weapon Special Attack").enabled then
-            KerapacCore.useSpecialAttackAbility()
-        elseif API.GetABs_name1("Essence of Finality").enabled then
-            KerapacCore.useEssenceOfFinalityAbility()
+        if KerapacCore.kerapacPhase ~= 3 and not KerapacCore.islightningPhase then
+            if KerapacCore.hasDeathGuardEquipped and API.GetABs_name1("Weapon Special Attack").enabled then
+                KerapacCore.useSpecialAttackAbility()
+            elseif API.GetABs_name1("Essence of Finality").enabled then
+                KerapacCore.useEssenceOfFinalityAbility()
+            end
         end
     end
 
@@ -1450,16 +1466,20 @@ function KerapacCore.castNextAbility()
     if KerapacCore.necrosisStacks > 5 
     and not API.Buffbar_GetIDstatus(Data.deathSparkReady).found
     and not KerapacCore.isPhasing then
-        KerapacCore.useFingerOfDeathAbility()
-        return
+        if KerapacCore.kerapacPhase ~= 3 and not KerapacCore.islightningPhase then
+            KerapacCore.useFingerOfDeathAbility()
+            return
+        end
     end
 
     if KerapacCore.residualSoulsStack > 2 
     and Data.extraAbilities.volleyOfSoulsAbility.AB.enabled 
     and not API.Buffbar_GetIDstatus(Data.deathSparkReady).found
     and not KerapacCore.isPhasing then
-        KerapacCore.useVolleyOfSoulsAbility()
-        return
+        if KerapacCore.kerapacPhase ~= 3 and not KerapacCore.islightningPhase then
+            KerapacCore.useVolleyOfSoulsAbility()
+            return
+        end
     end
 
     if Data.extraAbilities.bloatAbility.AB.cooldown_timer <= 0 
@@ -1467,8 +1487,10 @@ function KerapacCore.castNextAbility()
     and API.GetAddreline_() >= Data.extraAbilities.bloatAbility.threshold 
     and not API.Buffbar_GetIDstatus(Data.deathSparkReady).found
     and not KerapacCore.hasBloatDebuff then
-        KerapacCore.useBloatAbility()
-        return
+        if KerapacCore.kerapacPhase ~= 3 and not KerapacCore.islightningPhase then
+            KerapacCore.useBloatAbility()
+            return
+        end
     end
 
     if Data.extraAbilities.touchOfDeathAbility.AB.cooldown_timer <= 0
