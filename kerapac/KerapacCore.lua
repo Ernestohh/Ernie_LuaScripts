@@ -79,7 +79,9 @@ local KerapacCore = {
     resonanceTicks = API.Get_tick(),
     vulnTicks = API.Get_tick(),
     summoningSpecialTicks = API.Get_tick(),
+    removeFromTableTicks = API.Get_tick(),
     lightningDirections = {},
+    killableEchoes = {},
     
     kerapacPhase = 1,
     kerapacEcho1 = nil,
@@ -118,7 +120,7 @@ KerapacCore.StartButton = API.CreateIG_answer()
 KerapacCore.StartButton.box_name = "Start"
 KerapacCore.StartButton.box_start = FFPOINT.new(Data.MARGIN + Data.PADDING_X + 120, Data.BOX_START_Y + Data.PADDING_Y + 40, 0)
 KerapacCore.StartButton.box_size = FFPOINT.new(Data.BUTTON_WIDTH, Data.BUTTON_HEIGHT, 0)
-KerapacCore.StartButton.colour = ImColor.new(0, 255, 0)
+KerapacCore.StartButton.colour = ImColor.new(160, 255, 0)
 
 KerapacCore.adrenCheckbox = API.CreateIG_answer()
 KerapacCore.adrenCheckbox.box_name = "Adrenaline Crystal Unlocked"
@@ -1036,7 +1038,7 @@ function KerapacCore.HandlePhase4()
             table.insert(killableEchoes, echoes[i])
         end
     end
-    local targetInfo = API.ReadTargetInfo()
+    local targetInfo = API.ReadTargetInfo() 
 
     if #killableEchoes == 3 and targetInfo.Target_Name ~= "Echo of Kerapac" then
         API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { killableEchoes[1].Id }, 10)
@@ -1062,7 +1064,10 @@ function KerapacCore.HandlePhase4()
 
     if(#killableEchoes > 0) then
         KerapacCore.applyVulnerability()
-        API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { killableEchoes[1].Id }, 10)
+        if not API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { killableEchoes[1].Id }, 10) then
+            API.DoAction_Dive_Tile(WPOINT.new(math.floor(killableEchoes[1].TileX)/512, math.floor(killableEchoes[1].TileY)/512,math.floor(killableEchoes[1].TileZ)/512))
+            API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { killableEchoes[1].Id }, 10)
+        end
     end
 
     KerapacCore.phase4Ticks = API.Get_tick()
@@ -2006,8 +2011,6 @@ function KerapacCore.handleCombat(state)
             if KerapacCore.islightningPhase then
                 KerapacCore.islightningPhase = false
             end
-            print("x: "..KerapacCore.getKerapacPositionFFPOINT().x, "y: "..KerapacCore.getKerapacPositionFFPOINT().y)
-            print("corrected x: "..math.floor(KerapacCore.getKerapacPositionFFPOINT().x), " corrected y: "..math.floor(KerapacCore.getKerapacPositionFFPOINT().y))
             KerapacCore.canAttack = false
             KerapacCore.sleepTickRandom(2)
             API.DoAction_Dive_Tile(WPOINT.new(math.floor(KerapacCore.getKerapacPositionFFPOINT().x), math.floor(KerapacCore.getKerapacPositionFFPOINT().y), math.floor(KerapacCore.getKerapacPositionFFPOINT().z)))
