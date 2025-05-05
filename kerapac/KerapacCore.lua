@@ -986,8 +986,9 @@ end
 function KerapacCore.setupPlayerTank(clones)
     if KerapacCore.isPartyLeader or not KerapacCore.isInParty then 
         API.DoAction_Dive_Tile(KerapacCore.kerapacEcho2)
+        API.DoAction_Tile(KerapacCore.kerapacEcho2)
         KerapacCore.sleepTickRandom(5)
-        API.DoAction_NPC(0x2a, API.OFF_ACT_InteractNPC_route, { clones[1].Id }, 10)
+        API.DoAction_NPC(0x2a, API.OFF_ACT_InteractNPC_route, { clones[1].Id }, 7)
         KerapacCore.sleepTickRandom(3)
         Inventory:Eat("Powerburst of vitality")
         KerapacCore.sleepTickRandom(1)
@@ -1710,6 +1711,12 @@ function KerapacCore.HandleHardMode()
     if KerapacCore.isHardMode then
         if API.ScanForInterfaceTest2Get(false, { { 1591,15,-1,0 }, { 1591,17,-1,0 }, { 1591,41,-1,0 }, { 1591,12,-1,0 } })[1].textids == "Kerapac" then
             KerapacCore.log("Time to lock in")
+            API.DoAction_Interface(0x24,0xffffffff,1,1591,4,-1,API.OFF_ACT_GeneralInterface_route)
+        end
+    end
+    if not KerapacCore.isHardMode then
+        if API.ScanForInterfaceTest2Get(false, { { 1591,15,-1,0 }, { 1591,17,-1,0 }, { 1591,41,-1,0 }, { 1591,12,-1,0 } })[1].textids ~= "Kerapac" then
+            KerapacCore.log("Time to ease up")
             API.DoAction_Interface(0x24,0xffffffff,1,1591,4,-1,API.OFF_ACT_GeneralInterface_route)
         end
     end
