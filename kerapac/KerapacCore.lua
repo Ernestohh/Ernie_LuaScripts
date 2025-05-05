@@ -84,6 +84,7 @@ local KerapacCore = {
     kerapacPhase = 1,
     kerapacEcho1 = nil,
     kerapacEcho2 = nil,
+    kerapacEcho3 = nil,
     
     Background = nil,
     PassivesDropdown = nil,
@@ -405,8 +406,7 @@ function KerapacCore.getBossStateFromAnimation(animation)
 end
 
 function KerapacCore.enableMagePray()
-    local isBuffActive = API.Buffbar_GetIDstatus(Data.extraAbilities.splitSoulAbility.buffId).found
-    if isBuffActive then return end
+    if API.Buffbar_GetIDstatus(30126).found then return end
     if API.GetPrayPrecent() <= 0 or KerapacCore.magePrayEnabled then return end
     
     local overheadTable = nil
@@ -596,7 +596,7 @@ function KerapacCore.disablePassivePrayer()
 end
 
 function KerapacCore.checkForDebilitateOnTarget()
-    for _,value in ipairs(API.ReadTargetInfo(true).Buff_stack) do
+    for _,value in ipairs(API.ReadTargetInfo().Buff_stack) do
         if value == Data.extraAbilities.debilitateAbility.debuffId then
             return true
         end
@@ -605,12 +605,18 @@ function KerapacCore.checkForDebilitateOnTarget()
 end
 
 function KerapacCore.checkForBloatOnTarget()
-    for _,value in ipairs(API.ReadTargetInfo(true).Buff_stack) do
+    for _,value in ipairs(API.ReadTargetInfo().Buff_stack) do
         if value == Data.extraAbilities.bloatAbility.buffId then
             return true
         end
     end
     return false
+end
+
+function KerapacCore.checkForSplitSoul()
+    if API.Buffbar_GetIDstatus(30126).found and not KerapacCore.isSoulSplitEnabled then
+        KerapacCore.enableSoulSplit()
+    end
 end
 
 function KerapacCore.useDarkness()
@@ -625,8 +631,8 @@ end
 
 function KerapacCore.useSplitSoul()
     API.DoAction_Ability_check(Data.extraAbilities.splitSoulAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
-        KerapacCore.log("Split my soul into pieces, this is my last resort")
-        KerapacCore.enableSoulSplit()
+    KerapacCore.log("Split my soul into pieces, this is my last resort")
+    KerapacCore.enableSoulSplit()
 end
 
 function KerapacCore.useDevotionAbility()
@@ -770,9 +776,10 @@ function KerapacCore.applyVulnerability()
     if not Inventory:Contains("Vulnerability bomb") and not API.GetABs_name1("Vulnerability bomb").enabled then return end
     if API.ReadTargetInfo().Target_Name ~= "Kerapac, the bound" and API.ReadTargetInfo().Target_Name ~= "Echo of Kerapac" then return end
     if not (API.Get_tick() - KerapacCore.vulnTicks > 12) then return end
-    if not KerapacCore.currentState == Data.bossStateEnum.TEAR_RIFT_ATTACK_COMMENCE and not KerapacCore.currentState == Data.bossStateEnum.TEAR_RIFT_ATTACK_MOVE then return end
+    if not KerapacCore.currentState == Data.bossStateEnum.TEAR_RIFT_ATTACK_COMMENCE and not KerapacCore.currentState == Data.bossStateEnum.TEAR_RIFT_ATTACK_MOVE
+    and not KerapacCore.currentState == Data.bossStateEnum.JUMP_ATTACK_COMMENCE and not KerapacCore.currentState == Data.bossStateEnum.JUMP_ATTACK_IN_AIR then return end
     local hasVuln = false
-    for _,value in ipairs(API.ReadTargetInfo(true).Buff_stack) do
+    for _,value in ipairs(API.ReadTargetInfo().Buff_stack) do
         if value == 14395 then
             hasVuln = true
         end
@@ -988,7 +995,7 @@ function KerapacCore.setupPlayerTank(clones)
         API.DoAction_Dive_Tile(KerapacCore.kerapacEcho2)
         API.DoAction_Tile(KerapacCore.kerapacEcho2)
         KerapacCore.sleepTickRandom(5)
-        API.DoAction_NPC(0x2a, API.OFF_ACT_InteractNPC_route, { clones[1].Id }, 7)
+        API.DoAction_NPC(0x2a, API.OFF_ACT_InteractNPC_route, { clones[1].Id }, 10)
         KerapacCore.sleepTickRandom(3)
         Inventory:Eat("Powerburst of vitality")
         KerapacCore.sleepTickRandom(1)
@@ -999,6 +1006,7 @@ end
 function KerapacCore.setupEchoLocations()
     KerapacCore.kerapacEcho1 = WPOINT.new(math.floor(KerapacCore.centerOfArenaPosition.x), math.floor(KerapacCore.centerOfArenaPosition.y + 9), math.floor(KerapacCore.centerOfArenaPosition.z))
     KerapacCore.kerapacEcho2 = WPOINT.new(math.floor(KerapacCore.centerOfArenaPosition.x), math.floor(KerapacCore.centerOfArenaPosition.y - 9), math.floor(KerapacCore.centerOfArenaPosition.z))
+    KerapacCore.kerapacEcho3 = WPOINT.new(math.floor(KerapacCore.centerOfArenaPosition.x-9), math.floor(KerapacCore.centerOfArenaPosition.y), math.floor(KerapacCore.centerOfArenaPosition.z))
 end
 
 function KerapacCore.hardModePhase4Setup()
@@ -1071,6 +1079,7 @@ function KerapacCore.castNextAbility()
     KerapacCore.residualSoulsStack = API.VB_FindPSettinOrder(11035).state
     KerapacCore.lastAttackTick = attackTick
     KerapacCore.globalCooldownTicks = API.Get_tick()
+    KerapacCore.checkForSplitSoul()
 
     if Data.extraAbilities.conjureUndeadArmyAbility.AB.enabled 
     and API.VB_FindPSettinOrder(10994).state < 1 
@@ -1446,7 +1455,7 @@ function KerapacCore.castNextAbility()
 
     KerapacCore.log("Literally nothing to do so guess I'll do an auto attack")
 end
-print(Data.extraAbilities.immortalityAbility.AB.enabled)
+
 function KerapacCore.handleResonance()
     if not KerapacCore.isResonanceEnabled and not (API.Get_tick() - KerapacCore.resonanceTicks > 2) then 
         if not KerapacCore.isMagePrayEnabled and not KerapacCore.isMeleePrayEnabled and KerapacCore.isSoulSplitEnabled then
@@ -1525,7 +1534,7 @@ function KerapacCore.summonFamiliar()
 end
 
 function KerapacCore.setupAutoFire()
-    if Familiars:HasFamiliar() and not KerapacCore.isAutoFireSetup then
+    if Familiars:HasFamiliar() and not KerapacCore.isAutoFireSetup and Familiars:GetName() ~= "Hellhound" then
         API.DoAction_Interface(0xffffffff,0xffffffff,1,662,74,-1,API.OFF_ACT_GeneralInterface_route)
         KerapacCore.sleepTickRandom(2)
         API.KeyPress_(0x01)
@@ -1807,6 +1816,27 @@ function KerapacCore.BeginFight()
     KerapacCore.log("Move to spot")
     KerapacCore.enableMagePray()
     API.DoAction_TileF(KerapacCore.startLocationOfArena)
+    if Data.extraAbilities.conjureUndeadArmyAbility.AB.enabled 
+    and API.VB_FindPSettinOrder(10994).state < 1 
+    and API.VB_FindPSettinOrder(11018).state < 1 
+    and API.VB_FindPSettinOrder(11006).state < 1 then
+        KerapacCore.useConjureUndeadArmy()
+    else
+        if Data.extraAbilities.conjureSkeletonWarriorAbility.AB.enabled 
+            and API.VB_FindPSettinOrder(10994).state < 1 then
+            KerapacCore.useConjureSkeletonWarrior()
+    end
+
+        if Data.extraAbilities.conjureVengefulGhostAbility.AB.enabled 
+            and API.VB_FindPSettinOrder(11018).state < 1 then
+            KerapacCore.useConjureVengefulGhost()
+        end
+
+        if Data.extraAbilities.conjurePutridZombieAbility.AB.enabled 
+            and API.VB_FindPSettinOrder(11006).state < 1 then
+            KerapacCore.useConjurePutridZombie()
+        end
+    end
     API.WaitUntilMovingEnds(20, 4)
 end
 
@@ -1976,6 +2006,8 @@ function KerapacCore.handleCombat(state)
             if KerapacCore.islightningPhase then
                 KerapacCore.islightningPhase = false
             end
+            print("x: "..KerapacCore.getKerapacPositionFFPOINT().x, "y: "..KerapacCore.getKerapacPositionFFPOINT().y)
+            print("corrected x: "..math.floor(KerapacCore.getKerapacPositionFFPOINT().x), " corrected y: "..math.floor(KerapacCore.getKerapacPositionFFPOINT().y))
             KerapacCore.canAttack = false
             KerapacCore.sleepTickRandom(2)
             API.DoAction_Dive_Tile(WPOINT.new(math.floor(KerapacCore.getKerapacPositionFFPOINT().x), math.floor(KerapacCore.getKerapacPositionFFPOINT().y), math.floor(KerapacCore.getKerapacPositionFFPOINT().z)))
