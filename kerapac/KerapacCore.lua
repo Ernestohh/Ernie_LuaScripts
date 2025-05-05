@@ -1001,6 +1001,7 @@ function KerapacCore.setupPlayerTank(clones)
         Inventory:Eat("Powerburst of vitality")
         KerapacCore.sleepTickRandom(1)
         API.DoAction_NPC(0x2a, API.OFF_ACT_InteractNPC_route, { clones[1].Id }, 50)
+        KerapacCore.sleepTickRandom(1)
     end
 end
 
