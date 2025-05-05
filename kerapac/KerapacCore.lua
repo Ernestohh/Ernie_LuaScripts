@@ -1051,7 +1051,8 @@ function KerapacCore.HandlePhase4()
     elseif #killableEchoes == 1 and targetInfo.Hitpoints == 100000 then
         KerapacCore.log("amount of killable echoes "..#killableEchoes)
         API.DoAction_Dive_Tile(WPOINT.new(math.floor(killableEchoes[1].TileX)/512, math.floor(killableEchoes[1].TileY)/512,math.floor(killableEchoes[1].TileZ)/512))
-        KerapacCore.sleepTickRandom(2)
+        KerapacCore.sleepTickRandom(0)
+        API.DoAction_Tile(WPOINT.new(math.floor(killableEchoes[1].TileX)/512, math.floor(killableEchoes[1].TileY)/512,math.floor(killableEchoes[1].TileZ)/512))
         API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { killableEchoes[1].Id }, 100)
     elseif #killableEchoes == 0 then
         KerapacCore.attackKerapac()
