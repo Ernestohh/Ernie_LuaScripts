@@ -42,7 +42,7 @@ end
 function KerapacLogger:Debug(message)
     if self.currentLevel == self.levels.DEBUG then
         local formattedMessage = self:FormatMessage(self.levels.DEBUG, message)
-        print(self.colors.DEBUG .. formattedMessage .. self.colors.RESET)
+        print(formattedMessage)
         API.Log(formattedMessage, "debug")
     end
 end
@@ -51,7 +51,7 @@ function KerapacLogger:Info(message)
     if self.currentLevel == self.levels.DEBUG or 
        self.currentLevel == self.levels.INFO then
         local formattedMessage = self:FormatMessage(self.levels.INFO, message)
-        print(self.colors.INFO .. formattedMessage .. self.colors.RESET)
+        print(formattedMessage)
         API.Log(formattedMessage, "info")
     end
 end
@@ -59,20 +59,15 @@ end
 function KerapacLogger:Warn(message)
     if self.currentLevel ~= self.levels.ERROR then
         local formattedMessage = self:FormatMessage(self.levels.WARN, message)
-        print(self.colors.WARN .. formattedMessage .. self.colors.RESET)
+        print(formattedMessage)
         API.Log(formattedMessage, "warn")
     end
 end
 
 function KerapacLogger:Error(message)
     local formattedMessage = self:FormatMessage(self.levels.ERROR, message)
-    print(self.colors.ERROR .. formattedMessage .. self.colors.RESET)
+    print(formattedMessage)
     API.Log(formattedMessage, "error")
-end
-
-function KerapacLogger:Clear()
-    API.ClearLog()
-    self:Info("Log cleared")
 end
 
 return KerapacLogger
