@@ -942,6 +942,36 @@ function KerapacCombat:CastNextAbility()
         return
     end
 
+    if Data.extraAbilities.devotionAbility.AB.cooldown_timer <= 0 
+    and Data.extraAbilities.devotionAbility.AB.enabled 
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.debilitateAbility.debuffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.reflectAbility.buffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.devotionAbility.buffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.immortalityAbility.buffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.barricadeAbility.buffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.rejuvenateAbility.buffId).found
+    and State.currentState ~= Data.bossStateEnum.JUMP_ATTACK_COMMENCE.name
+    and State.currentState ~= Data.bossStateEnum.JUMP_ATTACK_IN_AIR.name
+    and State.currentState ~= Data.bossStateEnum.JUMP_ATTACK_LANDED.name
+    and not State.isPhasing
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.splitSoulAbility.buffId).found
+    and API.GetAddreline_() >= Data.extraAbilities.devotionAbility.threshold then
+        if State.kerapacPhase >= 4 
+        and timeWarpActionButton then
+            if API.GetHPrecent() > 70 then
+                self:UseWarpTime()
+            else
+                local oldThreshold = Data.emergencyEatThreshold
+                Data.emergencyEatThreshold = API.GetHPrecent()+10
+                Utils:EatFood()
+                Data.emergencyEatThreshold = oldThreshold
+                self:UseWarpTime()
+            end
+        end
+        self:UseDevotionAbility()
+        return
+    end
+
     if Data.extraAbilities.reflectAbility.AB.cooldown_timer <= 0 
     and Data.extraAbilities.reflectAbility.AB.enabled 
     and API.GetAddreline_() >= Data.extraAbilities.reflectAbility.threshold
@@ -971,36 +1001,6 @@ function KerapacCombat:CastNextAbility()
             self:UseReflectAbility()
             return
         end
-    end
-
-    if Data.extraAbilities.devotionAbility.AB.cooldown_timer <= 0 
-    and Data.extraAbilities.devotionAbility.AB.enabled 
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.debilitateAbility.debuffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.reflectAbility.buffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.devotionAbility.buffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.immortalityAbility.buffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.barricadeAbility.buffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.rejuvenateAbility.buffId).found
-    and State.currentState ~= Data.bossStateEnum.JUMP_ATTACK_COMMENCE.name
-    and State.currentState ~= Data.bossStateEnum.JUMP_ATTACK_IN_AIR.name
-    and State.currentState ~= Data.bossStateEnum.JUMP_ATTACK_LANDED.name
-    and not State.isPhasing
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.splitSoulAbility.buffId).found
-    and API.GetAddreline_() >= Data.extraAbilities.devotionAbility.threshold then
-        if State.kerapacPhase >= 4 
-        and timeWarpActionButton then
-            if API.GetHPrecent() > 70 then
-                self:UseWarpTime()
-            else
-                local oldThreshold = Data.emergencyEatThreshold
-                Data.emergencyEatThreshold = API.GetHPrecent()+10
-                Utils:EatFood()
-                Data.emergencyEatThreshold = oldThreshold
-                self:UseWarpTime()
-            end
-        end
-        self:UseDevotionAbility()
-        return
     end
     
     if Data.extraAbilities.debilitateAbility.AB.cooldown_timer <= 0 
