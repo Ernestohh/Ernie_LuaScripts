@@ -1,83 +1,89 @@
 local API = require("api")
-API.SetDrawLogs(true)
-
 local Data = require("kerapac/KerapacData")
-local Core = require("kerapac/KerapacCore")
+local State = require("kerapac/KerapacState")
+local Combat = require("kerapac/KerapacCombat")
+local HardMode = require("kerapac/KerapacHardMode")
+local Logger = require("kerapac/KerapacLogger")
+local Utils = require("kerapac/KerapacUtils")
+local UI = require("kerapac/KerapacUI")
+local Preparation = require("kerapac/KerapacPreparation")
+local Loot = require("kerapac/KerapacLoot")
 
-Core.log("Started Ernie's Kerapac Bosser " .. Data.version)
+Logger:Info("Started Ernie's Kerapac Bosser " .. Data.version)
 API.SetMaxIdleTime(5)
 API.Write_fake_mouse_do(false)
-Core.handleCombatMode()
+UI:InitializeUI()
+
 while (API.Read_LoopyLoop()) do
-    if Core.guiVisible then
-        Core.DrawGui() 
+    if State.guiVisible then
+        UI:DrawGui() 
     end
     
-    if Core.startScript then
-        if not Core.isInBattle and not Core.isTimeToLoot then
-            if not Core.isInWarsRetreat then
-                Core.checkStartLocation()
+    if State.startScript then
+        if not State.isInBattle and not State.isTimeToLoot then
+            if not State.isInWarsRetreat then
+                Preparation:CheckStartLocation()
             end
             
-            if Core.isInWarsRetreat and not Core.isRestoringPrayer and not Core.isPrepared and API.Read_LoopyLoop() then
-                Core.HandlePrayerRestore()
+            if State.isInWarsRetreat and not State.isRestoringPrayer and not State.isPrepared and API.Read_LoopyLoop() then
+                Preparation:HandlePrayerRestore()
             end
 
-            if Core.isInWarsRetreat and not Core.isBanking and not Core.isPrepared and API.Read_LoopyLoop() then
-                Core.HandleBanking()
+            if State.isInWarsRetreat and not State.isBanking and not State.isPrepared and API.Read_LoopyLoop() then
+                Preparation:HandleBanking()
             end
 
-            if Core.isInWarsRetreat and Core.isBanking and Core.isRestoringPrayer and not Core.isPrepared and API.Read_LoopyLoop() then
-                Core.prepareForBattle()
+            if State.isInWarsRetreat and State.isBanking and State.isRestoringPrayer and not State.isPrepared and API.Read_LoopyLoop() then
+                Preparation:PrepareForBattle()
             end
 
-            if Core.isPrepared and not Core.isMaxAdrenaline and API.Read_LoopyLoop() then
-                Core.handleAdrenalineCrystal()
+            if State.isPrepared and not State.isMaxAdrenaline and API.Read_LoopyLoop() then
+                Preparation:HandleAdrenalineCrystal()
             end
             
-            if Core.isPrepared and Core.isMaxAdrenaline and not Core.isPortalUsed and API.Read_LoopyLoop() then
-               Core.goThroughPortal() 
+            if State.isPrepared and State.isMaxAdrenaline and not State.isPortalUsed and API.Read_LoopyLoop() then
+               Preparation:GoThroughPortal() 
             end
             
-            if Core.isPortalUsed and not Core.isInArena and API.Read_LoopyLoop() then
-                Core.goThroughGate() 
+            if State.isPortalUsed and not State.isInArena and API.Read_LoopyLoop() then
+                Preparation:GoThroughGate() 
             end
             
-            if Core.isInArena and API.Read_LoopyLoop() then
-                Core.startEncounter()
-                Core.checkKerapacExists()
+            if State.isInArena and API.Read_LoopyLoop() then
+                Preparation:StartEncounter()
+                Preparation:CheckKerapacExists()
             end
-        elseif Core.isInBattle and API.Read_LoopyLoop() and not Core.isPlayerDead and not Core.isHardMode then
-            Core.avoidLightningBolts()
-            Core.managePlayer()
-            Core.manageBuffs()
-            Core.handleBossPhase()
-            Core.handleStateChange(Core.getKerapacAnimation())
-        elseif Core.isInBattle and API.Read_LoopyLoop() and not Core.isPlayerDead and Core.isHardMode then
-            if Core.kerapacPhase >= 4 then
-                Core.hardModePhase4Setup()
-                if Core.isPhase4SetupComplete then 
-                    Core.HandlePhase4()
-                    Core.managePlayer()
-                    Core.manageBuffs()
-                    Core.handleBossPhase()
+        elseif State.isInBattle and API.Read_LoopyLoop() and not State.isPlayerDead and not State.isHardMode then
+            HardMode:AvoidLightningBolts()
+            Combat:ManagePlayer()
+            Combat:ManageBuffs()
+            Combat:HandleBossPhase()
+            Combat:HandleCombatState(State:UpdateStateFromAnimation(Combat:GetKerapacAnimation()))
+        elseif State.isInBattle and API.Read_LoopyLoop() and not State.isPlayerDead and State.isHardMode then
+            if State.kerapacPhase >= 4 then
+                HardMode:Phase4Setup()
+                if State.isPhase4SetupComplete then 
+                    HardMode:HandlePhase4()
+                    Combat:ManagePlayer()
+                    Combat:ManageBuffs()
+                    Combat:HandleBossPhase()
                 end
             else
-                Core.avoidLightningBolts()
-                Core.managePlayer()
-                Core.manageBuffs()
-                Core.handleBossPhase()
-                Core.handleStateChange(Core.getKerapacAnimation())
+                HardMode:AvoidLightningBolts()
+                Combat:ManagePlayer()
+                Combat:ManageBuffs()
+                Combat:HandleBossPhase()
+                Combat:HandleCombatState(State:UpdateStateFromAnimation(Combat:GetKerapacAnimation()))
             end
-        elseif Core.isPlayerDead then
-            Core.reclaimItemsAtGrave() 
-            Core.handleBossReset()
-        elseif Core.isTimeToLoot and not Core.isLooted and API.Read_LoopyLoop() then
-            Core.handleBossLoot()
-        elseif Core.isLooted and API.Read_LoopyLoop() then
-            Core.handleBossReset()
+        elseif State.isPlayerDead then
+            Preparation:ReclaimItemsAtGrave() 
+            Preparation:HandleBossReset()
+        elseif State.isTimeToLoot and not State.isLooted and API.Read_LoopyLoop() then
+            Loot:HandleLoot()
+        elseif State.isLooted and API.Read_LoopyLoop() then
+            Preparation:HandleBossReset()
         end
     end
 end
 
-Core.log("Stopped Ernie's Kerapac Bosser " .. Data.version)
+Logger:Info("Stopped Ernie's Kerapac Bosser " .. Data.version)

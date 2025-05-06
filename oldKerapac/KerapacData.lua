@@ -1,18 +1,15 @@
-local KerapacData = {}
+local version = "8.3"
 
-KerapacData.version = "8.5"
+local partyLeader = nil -- replace nil with playername like this "Bob" 
+local partyMembers = {} -- Add all player names including partyleader like this {"Bob", "Jo", "Mama"}
+local bankPin = nil     -- replace nil with your bank pin like this 1234 don't add ""
 
--- User configuration - modify these values
-KerapacData.partyLeader = nil -- replace nil with playername like this "Bob" 
-KerapacData.partyMembers = {} -- Add all player names including partyleader like this {"Bob", "Jo", "Mama"}
-KerapacData.bankPin = nil     -- replace nil with your bank pin like this 1234 don't add ""
-
-KerapacData.prayerType = {
+local prayerType = {
     Curses = { name = "Curses" },
     Prayers = { name = "Prayers" }
 }
 
-KerapacData.foodItems = {
+local foodItems = {
     "Lobster", "Swordfish", "Desert sole", "Catfish", "Monkfish", "Beltfish", 
     "Ghostly sole", "Cooked eeligator", "Shark", "Sea turtle", "Great white shark", 
     "Cavefish", "Manta ray", "Rocktail", "Tiger shark", "Sailfish", 
@@ -21,13 +18,13 @@ KerapacData.foodItems = {
     "Fury shark", "Primal feast"
 }
 
-KerapacData.emergencyFoodItems = {
+local emergencyFoodItems = {
     "Green blubber jellyfish", "Blue blubber jellyfish", 
     "2/3 green blubber jellyfish", "2/3 blue blubber jellyfish", 
     "1/3 green blubber jellyfish", "1/3 blue blubber jellyfish", 
 }
 
-KerapacData.emergencyDrinkItems = {
+local emergencyDrinkItems = {
     "Guthix rest (4)", "Guthix rest (3)", "Guthix rest (2)", "Guthix rest (1)",
     "Guthix rest flask (6)", "Guthix rest flask (5)", "Guthix rest flask (4)", "Guthix rest flask (3)", "Guthix rest flask (2)", "Guthix rest flask (1)",
     "Saradomin brew (4)", "Saradomin brew (3)", "Saradomin brew (2)", "Saradomin brew (1)",
@@ -38,7 +35,7 @@ KerapacData.emergencyDrinkItems = {
     "Super Saradomin brew flask (6)", "Super Saradomin brew flask (5)", "Super Saradomin brew flask (4)", "Super Saradomin brew flask (3)", "Super Saradomin brew flask (2)", "Super Saradomin brew flask (1)"
 }
 
-KerapacData.prayerRestoreItems = {
+local prayerRestoreItems = {
     "Super restore (4)", "Super restore (3)", "Super restore (2)", "Super restore (1)",
     "Super restore flask (6)", "Super restore flask (5)", "Super restore flask (4)", 
     "Super restore flask (3)", "Super restore flask (2)", "Super restore flask (1)",
@@ -53,7 +50,7 @@ KerapacData.prayerRestoreItems = {
     "Extreme prayer flask (4)", "Extreme prayer flask (5)", "Extreme prayer flask (6)"
 }
 
-KerapacData.overloadItems = {
+local overloadItems = {
     "Overload (4)", "Overload (3)", "Overload (2)", "Overload (1)",
     "Overload Flask (6)", "Overload Flask (5)", "Overload Flask (4)", 
     "Overload Flask (3)", "Overload Flask (2)", "Overload Flask (1)",
@@ -81,7 +78,7 @@ KerapacData.overloadItems = {
     "Supreme overload potion (5)", "Supreme overload potion (6)"
 }
 
-KerapacData.weaponPoisonItems = {
+local weaponPoisonItems = {
     "Weapon poison (1)", "Weapon poison (2)", "Weapon poison (3)", "Weapon poison (4)",
     "Weapon poison+ (1)", "Weapon poison+ (2)", "Weapon poison+ (3)", "Weapon poison+ (4)",
     "Weapon poison++ (1)", "Weapon poison++ (2)", "Weapon poison++ (3)", "Weapon poison++ (4)",
@@ -96,13 +93,13 @@ KerapacData.weaponPoisonItems = {
     "Weapon poison+++ flask (4)", "Weapon poison+++ flask (5)", "Weapon poison+++ flask (6)"
 }
 
-KerapacData.summoningPouches = {
+local summoningPouches = {
     "Blood nihil pouch", "Ice nihil pouch", "Shadow nihil pouch", "Smoke nihil pouch", 
     "Binding contract (ripper demon)", "Binding contract (kal'gerion demon)", 
     "Binding contract (blood reaver)", "Binding contract (hellhound)"
 }
 
-KerapacData.adrenalinePotionItems = {
+local adrenalinePotionItems = {
     "Adrenaline potion (1)", "Adrenaline potion (2)", "Adrenaline potion (3)", "Adrenaline potion (4)",
     "Adrenaline flask (1)", "Adrenaline flask (2)", "Adrenaline flask (3)", "Adrenaline flask (4)", "Adrenaline flask (5)", "Adrenaline flask (6)",
     "Super adrenaline potion (1)", "Super adrenaline potion (2)", "Super adrenaline potion (3)", "Super adrenaline potion (4)",
@@ -113,12 +110,12 @@ KerapacData.adrenalinePotionItems = {
     "Enhanced replenishment potion (1)", "Enhanced replenishment potion (2)", "Enhanced replenishment potion (3)", "Enhanced replenishment potion (4)", "Enhanced replenishment potion (5)", "Enhanced replenishment potion (6)"
 }
 
-KerapacData.extraItems = {
-    excalibur = 14632,
-    augmentedExcalibur = 36619
+local extraItems = {
+        excalibur = 14632,
+        augmentedExcalibur = 36619
 }
 
-KerapacData.extraAbilities = {
+local extraAbilities = {
     darknessAbility = {
         name = "Darkness", 
         buffId = 30122, 
@@ -312,7 +309,7 @@ KerapacData.extraAbilities = {
     },
 }
 
-KerapacData.overheadPrayersBuffs = {
+local overheadPrayersBuffs = {
     PrayMage = { 
         name = "Protect from Magic", 
         buffId = 25959, 
@@ -325,7 +322,7 @@ KerapacData.overheadPrayersBuffs = {
     }
 }
 
-KerapacData.overheadCursesBuffs = {
+local overheadCursesBuffs = {
     PrayMage = { 
         name = "Deflect Magic", 
         buffId = 26041, 
@@ -343,78 +340,78 @@ KerapacData.overheadCursesBuffs = {
     }
 }
 
-KerapacData.passiveBuffs = {
+local passiveBuffs = {
     Ruination = { 
         name = "Ruination", 
         buffId = 30769, 
         AB = nil,
-        type = KerapacData.prayerType.Curses.name 
+        type = prayerType.Curses.name 
     },
     Sorrow = { 
         name = "Sorrow", 
         buffId = 30771, 
         AB = nil,
-        type = KerapacData.prayerType.Curses.name 
+        type = prayerType.Curses.name 
     },
     Turmoil = { 
         name = "Turmoil", 
         buffId = 26019, 
         AB = nil,
-        type = KerapacData.prayerType.Curses.name 
+        type = prayerType.Curses.name 
     },
     Malevolence = { 
         name = "Malevolence", 
         buffId = 29262, 
         AB = nil,
-        type = KerapacData.prayerType.Curses.name 
+        type = prayerType.Curses.name 
     },
     Anguish = { 
         name = "Anguish", 
         buffId = 26020, 
         AB = nil,
-        type = KerapacData.prayerType.Curses.name 
+        type = prayerType.Curses.name 
     },
     Desolation = { 
         name = "Desolation", 
         buffId = 29263, 
         AB = nil,
-        type = KerapacData.prayerType.Curses.name 
+        type = prayerType.Curses.name 
     },
     Torment = { 
         name = "Torment", 
         buffId = 26021, 
         AB = nil,
-        type = KerapacData.prayerType.Curses.name 
+        type = prayerType.Curses.name 
     },
     Affliction = { 
         name = "Affliction", 
         buffId = 29264, 
         AB = nil,
-        type = KerapacData.prayerType.Curses.name 
+        type = prayerType.Curses.name 
     },
     Piety = { 
         name = "Piety", 
         buffId = 25973, 
         AB = nil,
-        type = KerapacData.prayerType.Prayers.name 
+        type = prayerType.Prayers.name 
     },
     Rigour = { 
         name = "Rigour", 
         buffId = 25982, 
         AB = nil,
-        type = KerapacData.prayerType.Prayers.name 
+        type = prayerType.Prayers.name 
     },
     Augury = { 
         name = "Augury", 
         buffId = 25974, 
         AB = nil,
-        type = KerapacData.prayerType.Prayers.name 
+        type = prayerType.Prayers.name 
     },
     Sanctity = { 
         name = "Sanctity", 
         buffId = 30925, 
         AB = nil,
-        type = KerapacData.prayerType.Prayers.name 
+        type = prayerType.Prayers.name 
     },
     None = {
         name = "None", 
@@ -424,7 +421,7 @@ KerapacData.passiveBuffs = {
     }
 }
 
-KerapacData.overloadBuff = {
+local overloadBuff = {
     Overload = {
         buffId = 26093
     },
@@ -436,7 +433,7 @@ KerapacData.overloadBuff = {
     }
 }
 
-KerapacData.extraBuffs = {
+local extraBuffs = {
     scriptureOfJas = {
         name = "Scripture of Jas", 
         itemId = 51814,
@@ -463,7 +460,7 @@ KerapacData.extraBuffs = {
     },
 }
 
-KerapacData.bossStateEnum = {
+local bossStateEnum = {
     BASIC_ATTACK = { 
         name = "BASIC_ATTACK", 
         animations = { 34192 } 
@@ -498,40 +495,94 @@ KerapacData.bossStateEnum = {
     }
 }
 
-KerapacData.deathGuardIds = {55524, 55532, 55540, 55528, 55536, 55544}
-KerapacData.omniGuardIds = {55484, 55480}
-KerapacData.deathSparkReady = 30127
+local deathGuardIds = {55524, 55532, 55540, 55528, 55536, 55544}
+local omniGuardIds = {55484, 55480}
+local deathSparkReady = 30127
 
-KerapacData.MARGIN = 100
-KerapacData.PADDING_Y = 6
-KerapacData.PADDING_X = 5
-KerapacData.LINE_HEIGHT = 12
-KerapacData.BOX_WIDTH = 340
-KerapacData.BOX_HEIGHT = 100
-KerapacData.BOX_START_Y = 600
-KerapacData.BOX_END_Y = KerapacData.BOX_START_Y + KerapacData.BOX_HEIGHT
-KerapacData.BOX_END_X = KerapacData.MARGIN + KerapacData.BOX_WIDTH + (2 * KerapacData.PADDING_X)
-KerapacData.BUTTON_WIDTH = 70
-KerapacData.BUTTON_HEIGHT = 25
-KerapacData.BUTTON_MARGIN = 8
+local MARGIN = 100
+local PADDING_Y = 6
+local PADDING_X = 5
+local LINE_HEIGHT = 12
+local BOX_WIDTH = 340
+local BOX_HEIGHT = 100
+local BOX_START_Y = 600
+local BOX_END_Y = BOX_START_Y + BOX_HEIGHT
+local BOX_END_X = MARGIN + BOX_WIDTH + (2 * PADDING_X)
+local BUTTON_WIDTH = 70
+local BUTTON_HEIGHT = 25
+local BUTTON_MARGIN = 8
 
-KerapacData.hpThreshold = 70
-KerapacData.prayerThreshold = 30
-KerapacData.emergencyEatThreshold = 50
-KerapacData.foodCooldown = 3
-KerapacData.drinkCooldown = 3
-KerapacData.phaseTransitionThreshold = 50000
-KerapacData.lootPosition = 5
-KerapacData.stun = 26103
-KerapacData.dodgeCooldown = 6
-KerapacData.distanceThreshold = 6
-KerapacData.proximityThreshold = 13
-KerapacData.weaponPoisonBuff = 30095
-KerapacData.waitForCheckTicks = 0
-KerapacData.playerClone = 28073
-KerapacData.kerapacClones = 28076
-KerapacData.summoningPointsForScroll = 20
-KerapacData.adrenalineCrystal = 114749
-KerapacData.timeWarpBuff = 15142
+local hpThreshold = 70
+local prayerThreshold = 30
+local emergencyEatThreshold = 50
+local foodCooldown = 3
+local drinkCooldown = 3
+local phaseTransitionThreshold = 50000
+local lootPosition = 5
+local stun = 26103
+local dodgeCooldown = 6
+local distanceThreshold = 6
+local proximityThreshold = 13
+local weaponPoisonBuff = 30095
+local waitForCheckTicks = 0
+local playerClone = 28073
+local kerapacClones = 28076
+local summoningPointsForScroll = 20 -- change this to your scroll value
+local adrenalineCrystal = 114749
 
-return KerapacData
+return {
+    version = version,
+    prayerType = prayerType,
+    foodItems = foodItems,
+    emergencyFoodItems = emergencyFoodItems,
+    emergencyDrinkItems = emergencyDrinkItems,
+    prayerRestoreItems = prayerRestoreItems,
+    overloadItems = overloadItems,
+    weaponPoisonItems = weaponPoisonItems,
+    adrenalinePotionItems = adrenalinePotionItems,
+    summoningPouches = summoningPouches,
+    extraItems = extraItems,
+    extraAbilities = extraAbilities,
+    overheadPrayersBuffs = overheadPrayersBuffs,
+    overheadCursesBuffs = overheadCursesBuffs,
+    passiveBuffs = passiveBuffs,
+    overloadBuff = overloadBuff,
+    extraBuffs = extraBuffs,
+    bossStateEnum = bossStateEnum,
+    partyLeader = partyLeader,
+    bankPin = bankPin,
+    partyMembers = partyMembers,
+    summoningPointsForScroll = summoningPointsForScroll,
+
+    MARGIN = MARGIN,
+    PADDING_Y = PADDING_Y, 
+    PADDING_X = PADDING_X,
+    LINE_HEIGHT = LINE_HEIGHT,
+    BOX_WIDTH = BOX_WIDTH,
+    BOX_HEIGHT = BOX_HEIGHT,
+    BOX_START_Y = BOX_START_Y,
+    BOX_END_Y = BOX_END_Y,
+    BOX_END_X = BOX_END_X,
+    BUTTON_WIDTH = BUTTON_WIDTH,
+    BUTTON_HEIGHT = BUTTON_HEIGHT,
+    BUTTON_MARGIN = BUTTON_MARGIN,
+    deathGuardIds = deathGuardIds,
+    omniGuardIds = omniGuardIds,
+    deathSparkReady = deathSparkReady,
+
+    hpThreshold = hpThreshold,
+    prayerThreshold = prayerThreshold,
+    emergencyEatThreshold = emergencyEatThreshold,
+    foodCooldown = foodCooldown,
+    drinkCooldown = drinkCooldown,
+    phaseTransitionThreshold = phaseTransitionThreshold,
+    lootPosition = lootPosition,
+    stun = stun,
+    dodgeCooldown = dodgeCooldown,
+    distanceThreshold = distanceThreshold,
+    proximityThreshold = proximityThreshold,
+    weaponPoisonBuff = weaponPoisonBuff,
+    waitForCheckTicks = waitForCheckTicks,
+    playerClone = playerClone,
+    kerapacClones = kerapacClones
+}
