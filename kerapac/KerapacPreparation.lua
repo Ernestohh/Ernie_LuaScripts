@@ -169,6 +169,7 @@ function KerapacPreparation:BeginFight()
     State.playerPosition = API.PlayerCoord()
     State.centerOfArenaPosition = FFPOINT.new(State.playerPosition.x - 7, State.playerPosition.y, 0)
     State.startLocationOfArena = FFPOINT.new(State.playerPosition.x - 25, State.playerPosition.y, 0)
+    State.kerapacPhase = API.VB_FindPSett(10949).state + 1
         
     Logger:Info("Resetting compass")
     API.DoAction_Interface(0xffffffff, 0xffffffff, 1, 1919, 2, -1, API.OFF_ACT_GeneralInterface_route)

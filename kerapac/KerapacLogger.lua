@@ -70,4 +70,9 @@ function KerapacLogger:Error(message)
     API.Log(formattedMessage, "error")
 end
 
+function KerapacLogger:Clear()
+    API.ClearLog()
+    self:Info("Log cleared")
+end
+
 return KerapacLogger

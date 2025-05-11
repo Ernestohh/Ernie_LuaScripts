@@ -221,15 +221,14 @@ end
 
 function KerapacState:HandlePhaseTransition(bossLife)
     if bossLife <= Data.phaseTransitionThreshold and self.kerapacPhase < 4 and not self.isPhasing then
-        self.kerapacPhase = self.kerapacPhase + 1
-        self.isPhasing = true
-        Logger:Info("Entering Phase " .. self.kerapacPhase)
+        self.isPhasing = true 
+        Logger:Info("Going to the next phase")
         return true
-    elseif bossLife > Data.phaseTransitionThreshold and self.isPhasing then
+    elseif (API.VB_FindPSett(10949).state + 1) ~= self.kerapacPhase then
+        self.kerapacPhase = API.VB_FindPSett(10949).state + 1
         self.isPhasing = false
-        Logger:Info("Resuming battle")
-        return true
-    end
+        Logger:Info("Starting the phase: " .. self.kerapacPhase)
+    end 
     return false
 end
 
