@@ -465,6 +465,13 @@ function KerapacUtils:handleTimeWarpBuff()
         local buff = API.Buffbar_GetIDstatus(Data.timeWarpBuff).found
         if not buff then 
             State.hasTimeWarpBuff = false
+            if not State.isEchoesDead then
+                local HardMode = require("kerapac/KerapacHardMode")
+                HardMode:AttackEcho()
+            else
+                local Combat = require("kerapac/KerapacCombat")
+                Combat:AttackKerapac()
+            end
             return 
         end
     end
@@ -479,4 +486,5 @@ function KerapacUtils:forceUseTimeWarpBuff()
         State.hasTimeWarpBuff = false
     end
 end
+
 return KerapacUtils

@@ -8,9 +8,9 @@ local Combat = require("kerapac/KerapacCombat")
 local KerapacHardMode = {}
 
 function KerapacHardMode:SetupEchoLocations()
-    State.kerapacEcho1 = WPOINT.new(math.floor(State.centerOfArenaPosition.x), math.floor(State.centerOfArenaPosition.y + 9), math.floor(State.centerOfArenaPosition.z))
-    State.kerapacEcho2 = WPOINT.new(math.floor(State.centerOfArenaPosition.x), math.floor(State.centerOfArenaPosition.y - 9), math.floor(State.centerOfArenaPosition.z))
-    State.kerapacEcho3 = WPOINT.new(math.floor(State.centerOfArenaPosition.x-9), math.floor(State.centerOfArenaPosition.y), math.floor(State.centerOfArenaPosition.z))
+    State.kerapacEcho1 = WPOINT.new(math.floor(State.centerOfArenaPosition.x), math.floor(State.centerOfArenaPosition.y + 9), 1)
+    State.kerapacEcho2 = WPOINT.new(math.floor(State.centerOfArenaPosition.x), math.floor(State.centerOfArenaPosition.y - 9), 1)
+    State.kerapacEcho3 = WPOINT.new(math.floor(State.centerOfArenaPosition.x-9), math.floor(State.centerOfArenaPosition.y), 1)
     Logger:Debug("Echo locations set up")
 end
 
@@ -54,6 +54,10 @@ function KerapacHardMode:Phase4Setup()
     Logger:Info("Phase 4 setup complete")
 end
 
+function KerapacHardMode:AttackEcho()
+    API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { Data.kerapacClones }, 10)
+end
+
 function KerapacHardMode:HandlePhase4()
     if not (API.Get_tick() - State.phase4Ticks > 1) then return end
     
@@ -72,24 +76,30 @@ function KerapacHardMode:HandlePhase4()
     local targetInfo = API.ReadTargetInfo() 
 
     if targetInfo.Target_Name ~= "Echo of Kerapac" then
-        API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { echoes[1].Id }, 10)
+        self:AttackEcho()
     end
 
-    if #killableEchoes == 2 and targetInfo.Hitpoints >= 90000 then
+    if #killableEchoes == 2 and targetInfo.Hitpoints >= 95000 then
         Logger:Debug("Amount of killable echoes: " .. #killableEchoes)
-        if API.Math_DistanceW(WPOINT.new(math.floor(killableEchoes[2].TileX)/512, math.floor(killableEchoes[2].TileY)/512, math.floor(killableEchoes[2].TileZ)/512), API.PlayerCoord()) > 10 then
-            API.DoAction_Dive_Tile(WPOINT.new(math.floor(killableEchoes[2].TileX)/512, math.floor(killableEchoes[2].TileY)/512, math.floor(killableEchoes[2].TileZ)/512))
+        API.DoAction_Dive_Tile(State.kerapacEcho2)
             Utils:SleepTickRandom(0)
-            API.DoAction_Tile(WPOINT.new(math.floor(killableEchoes[2].TileX)/512, math.floor(killableEchoes[2].TileY)/512, math.floor(killableEchoes[2].TileZ)/512))
-            API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { killableEchoes[2].Id }, 10)
+            API.DoAction_Tile(State.kerapacEcho2)
+            self:AttackEcho()
+        for i = 1, #killableEchoes do
+            if killableEchoes[i].Distance < 3 then
+                API.DoAction_Tile(State.kerapacEcho2)
+            end
         end
-    elseif #killableEchoes == 1 and targetInfo.Hitpoints >= 90000 then
+    elseif #killableEchoes == 1 and targetInfo.Hitpoints >= 95000 then
         Logger:Debug("Amount of killable echoes: " .. #killableEchoes)
-        if API.Math_DistanceW(WPOINT.new(math.floor(killableEchoes[1].TileX)/512, math.floor(killableEchoes[1].TileY)/512, math.floor(killableEchoes[1].TileZ)/512), API.PlayerCoord()) > 10 then
-            API.DoAction_Dive_Tile(WPOINT.new(math.floor(killableEchoes[1].TileX)/512, math.floor(killableEchoes[1].TileY)/512, math.floor(killableEchoes[1].TileZ)/512))
+        API.DoAction_Dive_Tile(State.kerapacEcho1)
             Utils:SleepTickRandom(0)
-            API.DoAction_Tile(WPOINT.new(math.floor(killableEchoes[1].TileX)/512, math.floor(killableEchoes[1].TileY)/512, math.floor(killableEchoes[1].TileZ)/512))
-            API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { killableEchoes[2].Id }, 10)
+            API.DoAction_Tile(State.kerapacEcho1)
+            self:AttackEcho()
+        for i = 1, #killableEchoes do
+            if killableEchoes[i].Distance < 3 then
+                API.DoAction_Tile(State.kerapacEcho1)
+            end
         end
     elseif #killableEchoes == 0 then
         if not State.isEchoesDead then

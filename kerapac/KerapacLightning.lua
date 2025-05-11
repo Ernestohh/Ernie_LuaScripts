@@ -29,7 +29,15 @@ function KerapacLightning:FindLightningDirections(bolts)
     State.lightningDirections = {}
     for i = 1, #bolts do
         if bolts[i].Distance < Data.proximityThreshold then
-            local direction = math.floor(math.ceil(API.calculateOrientation(bolts[i].MemE)/45)*45)
+            local direction = math.ceil(API.calculateOrientation(bolts[i].MemE)/45)
+            --print("Initial direction found = "..direction)
+            local decimal = direction - math.floor(direction)
+            --print("Rounded down direction found = "..direction)
+            if decimal > 0.7 then
+                direction = math.ceil(direction)*45
+            else
+                direction = math.floor(direction)*45
+            end
             Utils:AddIfNotExists(State.lightningDirections, direction)
         end
     end
