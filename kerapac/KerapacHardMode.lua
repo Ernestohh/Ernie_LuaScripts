@@ -26,6 +26,8 @@ function KerapacHardMode:SetupPlayerTank(clones)
         API.DoAction_NPC(0x2a, API.OFF_ACT_InteractNPC_route, { clones[1].Id }, 50)
         Utils:SleepTickRandom(1)
         Logger:Info("Player tanking position set up")
+        Utils:SleepTickRandom(1)
+        API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { Data.kerapacClones }, 10)
     end
 end
 
@@ -73,36 +75,22 @@ function KerapacHardMode:HandlePhase4()
         API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { echoes[1].Id }, 10)
     end
 
-    if targetInfo.Hitpoints == 0 and targetInfo.Target_Name == "Echo of Kerapac" then
-        State.currentTargetLp = targetInfo.Hitpoints
-        if targetInfo.Hitpoints > State.currentTargetLp then
-            Logger:Info("Echo killed")
-            table.remove(killableEchoes, 1)
-        
-            if #killableEchoes == 2 then
-                API.DoAction_Dive_Tile(WPOINT.new(math.floor(killableEchoes[2].TileX)/512, math.floor(killableEchoes[2].TileY)/512, math.floor(killableEchoes[1].TileZ)/512))
-                Utils:SleepTickRandom(0)
-                API.DoAction_Tile(WPOINT.new(math.floor(killableEchoes[1].TileX)/512, math.floor(killableEchoes[1].TileY)/512, math.floor(killableEchoes[1].TileZ)/512))
-            elseif #killableEchoes == 1 then
-                API.DoAction_Dive_Tile(WPOINT.new(math.floor(killableEchoes[1].TileX)/512, math.floor(killableEchoes[1].TileY)/512, math.floor(killableEchoes[1].TileZ)/512))
-                Utils:SleepTickRandom(0)
-                API.DoAction_Tile(WPOINT.new(math.floor(killableEchoes[1].TileX)/512, math.floor(killableEchoes[1].TileY)/512, math.floor(killableEchoes[1].TileZ)/512))
-            end
+    if #killableEchoes == 2 and targetInfo.Hitpoints >= 90000 then
+        Logger:Debug("Amount of killable echoes: " .. #killableEchoes)
+        if API.Math_DistanceW(WPOINT.new(math.floor(killableEchoes[2].TileX)/512, math.floor(killableEchoes[2].TileY)/512, math.floor(killableEchoes[2].TileZ)/512), API.PlayerCoord()) > 10 then
+            API.DoAction_Dive_Tile(WPOINT.new(math.floor(killableEchoes[2].TileX)/512, math.floor(killableEchoes[2].TileY)/512, math.floor(killableEchoes[2].TileZ)/512))
+            Utils:SleepTickRandom(0)
+            API.DoAction_Tile(WPOINT.new(math.floor(killableEchoes[2].TileX)/512, math.floor(killableEchoes[2].TileY)/512, math.floor(killableEchoes[2].TileZ)/512))
+            API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { killableEchoes[2].Id }, 10)
         end
-    end
-
-    if #killableEchoes == 2 then
+    elseif #killableEchoes == 1 and targetInfo.Hitpoints >= 90000 then
         Logger:Debug("Amount of killable echoes: " .. #killableEchoes)
-        API.DoAction_Dive_Tile(WPOINT.new(math.floor(killableEchoes[2].TileX)/512, math.floor(killableEchoes[2].TileY)/512, math.floor(killableEchoes[2].TileZ)/512))
-        Utils:SleepTickRandom(0)
-        API.DoAction_Tile(WPOINT.new(math.floor(killableEchoes[1].TileX)/512, math.floor(killableEchoes[1].TileY)/512, math.floor(killableEchoes[2].TileZ)/512))
-        API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { killableEchoes[2].Id }, 10)
-    elseif #killableEchoes == 1 then
-        Logger:Debug("Amount of killable echoes: " .. #killableEchoes)
-        API.DoAction_Dive_Tile(WPOINT.new(math.floor(killableEchoes[1].TileX)/512, math.floor(killableEchoes[1].TileY)/512, math.floor(killableEchoes[1].TileZ)/512))
-        Utils:SleepTickRandom(0)
-        API.DoAction_Tile(WPOINT.new(math.floor(killableEchoes[1].TileX)/512, math.floor(killableEchoes[1].TileY)/512, math.floor(killableEchoes[1].TileZ)/512))
-        API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { killableEchoes[1].Id }, 100)
+        if API.Math_DistanceW(WPOINT.new(math.floor(killableEchoes[1].TileX)/512, math.floor(killableEchoes[1].TileY)/512, math.floor(killableEchoes[1].TileZ)/512), API.PlayerCoord()) > 10 then
+            API.DoAction_Dive_Tile(WPOINT.new(math.floor(killableEchoes[1].TileX)/512, math.floor(killableEchoes[1].TileY)/512, math.floor(killableEchoes[1].TileZ)/512))
+            Utils:SleepTickRandom(0)
+            API.DoAction_Tile(WPOINT.new(math.floor(killableEchoes[1].TileX)/512, math.floor(killableEchoes[1].TileY)/512, math.floor(killableEchoes[1].TileZ)/512))
+            API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { killableEchoes[2].Id }, 10)
+        end
     elseif #killableEchoes == 0 then
         if not State.isEchoesDead then
             State.isEchoesDead = true
@@ -112,15 +100,6 @@ function KerapacHardMode:HandlePhase4()
 
     if #killableEchoes > 0 and targetInfo.Hitpoints ~= 100000 then
         Combat:ApplyVulnerability()
-        if not API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { killableEchoes[1].Id }, 10) then
-            API.DoAction_Dive_Tile(WPOINT.new(math.floor(killableEchoes[1].TileX)/512, math.floor(killableEchoes[1].TileY)/512, math.floor(killableEchoes[1].TileZ)/512))
-            Utils:SleepTickRandom(0)
-            API.DoAction_Tile(WPOINT.new(math.floor(killableEchoes[1].TileX)/512, math.floor(killableEchoes[1].TileY)/512, math.floor(killableEchoes[1].TileZ)/512))
-            API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { killableEchoes[1].Id }, 10)
-        end
-    end
-    if(targetInfo.Target_Name == "Echo of Kerapac") then
-        State.currentTargetLp = targetInfo.Hitpoints
     end
     State.phase4Ticks = API.Get_tick()
 end

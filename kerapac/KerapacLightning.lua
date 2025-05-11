@@ -29,7 +29,7 @@ function KerapacLightning:FindLightningDirections(bolts)
     State.lightningDirections = {}
     for i = 1, #bolts do
         if bolts[i].Distance < Data.proximityThreshold then
-            local direction = math.ceil(API.calculateOrientation(bolts[i].MemE))
+            local direction = math.floor(math.ceil(API.calculateOrientation(bolts[i].MemE)/45)*45)
             Utils:AddIfNotExists(State.lightningDirections, direction)
         end
     end
@@ -38,7 +38,7 @@ end
 function KerapacLightning:AvoidLightningBolts()
     local inDanger = false
     local closestBolt = nil
-    local allLightningBolts = API.GetAllObjArray1({ 28071, 9216 }, 100, {1})
+    local allLightningBolts = API.GetAllObjArray1({ 28071, 9216 }, 120, {1})
     self:FindLightningDirections(allLightningBolts)
     
     if #State.lightningDirections <= 0 and State.islightningPhase then
@@ -107,14 +107,9 @@ function KerapacLightning:WhereToAvoid()
                 end
             end
             if #tiles > 0 then
-                for i = 1, #tiles do
-                    print(tiles[i])
-                    self:PerformDodge(self:CreateSafeWPOINT(tiles[i]))
-                    Utils:SleepTickRandom(3)
-                    Combat:CastNextAbility()
-                    Utils:SleepTickRandom(3)
-                    Combat:CastNextAbility()
-                end
+                self:PerformDodge(self:CreateSafeWPOINT(tiles[1]))
+                Utils:SleepTickRandom(12)
+                self:PerformDodge(self:CreateSafeWPOINT(tiles[2]))
             end
         end
     elseif #directions == 3 then
@@ -157,13 +152,9 @@ function KerapacLightning:WhereToAvoid()
                 end
             end
             if #tiles > 0 then
-                for i = 1, #tiles do
-                    self:PerformDodge(self:CreateSafeWPOINT(tiles[i]))
-                    Utils:SleepTickRandom(3)
-                    Combat:CastNextAbility()
-                    Utils:SleepTickRandom(3)
-                    Combat:CastNextAbility()
-                end
+                self:PerformDodge(self:CreateSafeWPOINT(tiles[1]))
+                Utils:SleepTickRandom(12)
+                self:PerformDodge(self:CreateSafeWPOINT(tiles[2]))
             end
         end
     end
