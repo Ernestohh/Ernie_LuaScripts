@@ -8,11 +8,13 @@ local Utils = require("kerapac/KerapacUtils")
 local UI = require("kerapac/KerapacUI")
 local Preparation = require("kerapac/KerapacPreparation")
 local Loot = require("kerapac/KerapacLoot")
+local Lightning = require("kerapac/KerapacLightning")
 
 Logger:Info("Started Ernie's Kerapac Bosser " .. Data.version)
 API.SetMaxIdleTime(5)
 API.Write_fake_mouse_do(false)
 UI:InitializeUI()
+Combat:InitAbilities()
 
 while (API.Read_LoopyLoop()) do
     if State.guiVisible then
@@ -54,7 +56,7 @@ while (API.Read_LoopyLoop()) do
                 Preparation:CheckKerapacExists()
             end
         elseif State.isInBattle and API.Read_LoopyLoop() and not State.isPlayerDead and not State.isHardMode then
-            HardMode:AvoidLightningBolts()
+            Lightning:AvoidLightningBolts()
             Combat:ManagePlayer()
             Combat:ManageBuffs()
             Combat:HandleBossPhase()
@@ -69,7 +71,7 @@ while (API.Read_LoopyLoop()) do
                     Combat:HandleBossPhase()
                 end
             else
-                HardMode:AvoidLightningBolts()
+                Lightning:AvoidLightningBolts()
                 Combat:ManagePlayer()
                 Combat:ManageBuffs()
                 Combat:HandleBossPhase()

@@ -20,6 +20,7 @@ local KerapacState = {
     isAttackingKerapac = false,
     isPlayerDead = false,
     isFightStarted = false,
+    isEchoesDead = false,
     
     isRiftDodged = false,
     isJumpDodged = true,
@@ -47,6 +48,7 @@ local KerapacState = {
     hasResonance = false,
     hasScriptureBuff = false,
     hasTimeWarpBuff = false,
+    hasDodged = false,
     
     isFamiliarSummoned = false,
     isAutoFireSetup = false,
@@ -99,6 +101,10 @@ local KerapacState = {
     kerapacEcho1 = nil,
     kerapacEcho2 = nil,
     kerapacEcho3 = nil,
+    wave1Direction = nil,
+    wave2Direction = nil,
+    wave3Direction = nil,
+    currentTargetLp = nil,
     
     Background = nil,
     PassivesDropdown = nil,
@@ -146,6 +152,7 @@ function KerapacState:Reset()
     self.isMagePrayEnabled = false
     self.isSoulSplitEnabled = false
     self.isMaxAdrenaline = false
+    self.isEchoesDead = false
     
     self.hasOverload = false
     self.hasAdrenalinePotion = false
@@ -155,7 +162,7 @@ function KerapacState:Reset()
     self.hasDarkness = false
     self.hasInvokeDeath = false
     self.hasTimeWarpBuff = false
-    
+    self.hasDodged = false
     self.kerapacPhase = 1
     
     Logger:Info("State reset complete")

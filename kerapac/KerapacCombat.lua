@@ -440,7 +440,9 @@ function KerapacCombat:HandleCombatState(state)
         end
         State.canAttack = false
         Utils:SleepTickRandom(2)
-        API.DoAction_Dive_Tile(WPOINT.new(math.floor(self:GetKerapacInformation().TileX / 512), math.floor(self:GetKerapacInformation().TileY / 512), math.floor(self:GetKerapacInformation().TileZ / 512)))
+        if not API.DoAction_Dive_Tile(WPOINT.new(math.floor(self:GetKerapacInformation().TileX / 512), math.floor(self:GetKerapacInformation().TileY / 512), math.floor(self:GetKerapacInformation().TileZ / 512))) then
+            API.DoAction_Tile(WPOINT.new(math.floor(self:GetKerapacInformation().TileX / 512), math.floor(self:GetKerapacInformation().TileY / 512), math.floor(self:GetKerapacInformation().TileZ / 512)))
+        end
         self:EnableMagePray()
         State.isRiftDodged = true
         Logger:Info("Moved player under Kerapac")
@@ -488,10 +490,11 @@ function KerapacCombat:HandleCombatState(state)
     if state == Data.bossStateEnum.LIGHTNING_ATTACK.name and not State.islightningPhase then
         Logger:Info("Lightning Phase active ------------")
         local surgeAB = API.GetABs_name("Surge")
-        API.DoAction_Tile(WPOINT.new(State.playerPosition.x - 12, State.playerPosition.y, 0))
-        Utils:SleepTickRandom(3)
+        API.DoAction_Tile(WPOINT.new(State.centerOfArenaPosition.x, State.centerOfArenaPosition.y, 1))
+        Utils:SleepTickRandom(6)
         self:AttackKerapac()
         State.islightningPhase = true
+        State.hasDodged = false
     end
 end
 
@@ -734,7 +737,7 @@ function KerapacCombat:CastNextAbility()
 
     if Data.extraAbilities.invokeDeathAbility.AB.cooldown_timer <= 0 
     and not self:HasDeathInvocation() 
-    and not self:HasMarkOfDeath() 
+    and not self:HasMarkOfDeath()
     and Data.extraAbilities.invokeDeathAbility.AB.enabled 
     and State.hasInvokeDeath then
         self:UseInvokeDeathAbility()
@@ -760,6 +763,37 @@ function KerapacCombat:CastNextAbility()
     if Data.extraAbilities.commandVengefulGhostAbility.AB.cooldown_timer <= 0 
     and Data.extraAbilities.commandVengefulGhostAbility.AB.enabled then
         self:UseCommandVengefulGhost()
+        return
+    end
+
+    if Data.extraAbilities.immortalityAbility.AB.cooldown_timer <= 0 
+    and Data.extraAbilities.immortalityAbility.AB.enabled 
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.debilitateAbility.debuffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.reflectAbility.buffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.devotionAbility.buffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.immortalityAbility.buffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.barricadeAbility.buffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.rejuvenateAbility.buffId).found
+    and State.currentState ~= Data.bossStateEnum.JUMP_ATTACK_COMMENCE.name
+    and State.currentState ~= Data.bossStateEnum.JUMP_ATTACK_IN_AIR.name
+    and State.currentState ~= Data.bossStateEnum.JUMP_ATTACK_LANDED.name
+    and not State.islightningPhase
+    and not State.isPhasing
+    and State.kerapacPhase >= 4
+    and State.isEchoesDead
+    and API.GetAddreline_() >= Data.extraAbilities.immortalityAbility.threshold then
+        if timeWarpActionButton then
+            if API.GetHPrecent() > 70 then
+                self:UseWarpTime()
+            else
+                local oldThreshold = Data.emergencyEatThreshold
+                Data.emergencyEatThreshold = API.GetHPrecent()+10
+                Utils:EatFood()
+                Data.emergencyEatThreshold = oldThreshold
+                self:UseWarpTime()
+            end
+        end
+        self:UseImmortalityAbility()
         return
     end
 
@@ -850,36 +884,6 @@ function KerapacCombat:CastNextAbility()
     and not API.Buffbar_GetIDstatus(Data.deathSparkReady).found
     and not State.isPhasing then
         self:UseVolleyOfSoulsAbility()
-        return
-    end
-
-    if Data.extraAbilities.immortalityAbility.AB.cooldown_timer <= 0 
-    and Data.extraAbilities.immortalityAbility.AB.enabled 
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.debilitateAbility.debuffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.reflectAbility.buffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.devotionAbility.buffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.immortalityAbility.buffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.barricadeAbility.buffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.rejuvenateAbility.buffId).found
-    and State.currentState ~= Data.bossStateEnum.JUMP_ATTACK_COMMENCE.name
-    and State.currentState ~= Data.bossStateEnum.JUMP_ATTACK_IN_AIR.name
-    and State.currentState ~= Data.bossStateEnum.JUMP_ATTACK_LANDED.name
-    and not State.islightningPhase
-    and not State.isPhasing
-    and State.kerapacPhase >= 4
-    and API.GetAddreline_() >= Data.extraAbilities.immortalityAbility.threshold then
-        if timeWarpActionButton then
-            if API.GetHPrecent() > 70 then
-                self:UseWarpTime()
-            else
-                local oldThreshold = Data.emergencyEatThreshold
-                Data.emergencyEatThreshold = API.GetHPrecent()+10
-                Utils:EatFood()
-                Data.emergencyEatThreshold = oldThreshold
-                self:UseWarpTime()
-            end
-        end
-        self:UseImmortalityAbility()
         return
     end
 
