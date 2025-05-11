@@ -57,6 +57,9 @@ function KerapacLightning:AvoidLightningBolts()
     end
 
     if inDanger and not State.hasDodged then
+        for i = 1, #State.lightningDirections do
+            print("Directions found: ".. State.lightningDirections[i])
+        end
         State.canAttack = false
         self:WhereToAvoid()
         State.hasDodged = true

@@ -74,6 +74,7 @@ function KerapacHardMode:HandlePhase4()
     end
 
     if targetInfo.Hitpoints == 0 and targetInfo.Target_Name == "Echo of Kerapac" then
+        State.currentTargetLp = targetInfo.Hitpoints
         if targetInfo.Hitpoints > State.currentTargetLp then
             Logger:Info("Echo killed")
             table.remove(killableEchoes, 1)
