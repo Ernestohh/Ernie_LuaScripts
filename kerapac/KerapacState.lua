@@ -221,22 +221,18 @@ function KerapacState:CheckPlayerDeath()
     if API.GetHP_() <= 0 and not self.isPlayerDead then
         self.isPlayerDead = true
         Logger:Warn("Player died!")
-        return true
     end
-    return false
 end
 
 function KerapacState:HandlePhaseTransition(bossLife)
     if bossLife <= Data.phaseTransitionThreshold and self.kerapacPhase < 4 and not self.isPhasing then
-        self.isPhasing = true 
-        Logger:Info("Going to the next phase")
-        return true
-    elseif (API.VB_FindPSett(10949).state + 1) ~= self.kerapacPhase then
-        self.kerapacPhase = API.VB_FindPSett(10949).state + 1
+        self.kerapacPhase = self.kerapacPhase + 1
+        self.isPhasing = true
+        Logger:Info("Entering Phase " .. self.kerapacPhase)
+    elseif bossLife > Data.phaseTransitionThreshold and self.isPhasing then
         self.isPhasing = false
-        Logger:Info("Starting the phase: " .. self.kerapacPhase)
-    end 
-    return false
+        Logger:Info("Resuming battle")
+    end
 end
 
 function KerapacState:UpdateStateFromAnimation(animation)
