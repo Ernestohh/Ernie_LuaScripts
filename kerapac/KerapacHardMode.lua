@@ -105,7 +105,9 @@ function KerapacHardMode:HandlePhase4()
         if not State.isEchoesDead then
             State.isEchoesDead = true
         end
-        Combat:AttackKerapac()
+        if not targetInfo.Target_Name == "Kerapac, the bound" then
+            Combat:AttackKerapac()
+        end  
     end
 
     if #killableEchoes > 0 and targetInfo.Hitpoints ~= 100000 then

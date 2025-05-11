@@ -29,14 +29,30 @@ function KerapacLightning:FindLightningDirections(bolts)
     State.lightningDirections = {}
     for i = 1, #bolts do
         if bolts[i].Distance < Data.proximityThreshold then
-            local direction = math.ceil(API.calculateOrientation(bolts[i].MemE)/45)
-            --print("Initial direction found = "..direction)
-            local decimal = direction - math.floor(direction)
-            --print("Rounded down direction found = "..direction)
-            if decimal > 0.7 then
-                direction = math.ceil(direction)*45
-            else
-                direction = math.floor(direction)*45
+            local direction = math.ceil(API.calculateOrientation(bolts[i].MemE))
+            if direction > 40 and direction < 50 then
+                direction = 45
+            end
+            if direction > 50 and direction < 95 then
+                direction = 90
+            end
+            if direction > 95 and direction < 140 then
+                direction = 135
+            end
+            if direction > 140 and direction < 190 then
+                direction = 180
+            end
+            if direction > 190 and direction < 230 then
+                direction = 225
+            end
+            if direction > 230 and direction < 275 then
+                direction = 270
+            end
+            if direction > 275 and direction < 320 then
+                direction = 315
+            end
+            if direction > 320 or direction < 40 then
+                direction = 0
             end
             Utils:AddIfNotExists(State.lightningDirections, direction)
         end
@@ -116,7 +132,7 @@ function KerapacLightning:WhereToAvoid()
             end
             if #tiles > 0 then
                 self:PerformDodge(self:CreateSafeWPOINT(tiles[1]))
-                Utils:SleepTickRandom(10)
+                Utils:SleepTickRandom(9)
                 self:PerformDodge(self:CreateSafeWPOINT(tiles[2]))
             end
         end
@@ -161,7 +177,7 @@ function KerapacLightning:WhereToAvoid()
             end
             if #tiles > 0 then
                 self:PerformDodge(self:CreateSafeWPOINT(tiles[1]))
-                Utils:SleepTickRandom(10)
+                Utils:SleepTickRandom(9)
                 self:PerformDodge(self:CreateSafeWPOINT(tiles[2]))
             end
         end
