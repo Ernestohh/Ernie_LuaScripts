@@ -73,18 +73,20 @@ function KerapacHardMode:HandlePhase4()
         API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { echoes[1].Id }, 10)
     end
 
-    if targetInfo.Hitpoints == 0 or targetInfo.Hitpoints > State.currentTargetLp then
-        Logger:Info("Echo killed")
-        table.remove(killableEchoes, 1)
+    if targetInfo.Hitpoints == 0 and targetInfo.Target_Name == "Echo of Kerapac" then
+        if targetInfo.Hitpoints > State.currentTargetLp then
+            Logger:Info("Echo killed")
+            table.remove(killableEchoes, 1)
         
-        if #killableEchoes == 2 then
-            API.DoAction_Dive_Tile(WPOINT.new(math.floor(killableEchoes[2].TileX)/512, math.floor(killableEchoes[2].TileY)/512, math.floor(killableEchoes[1].TileZ)/512))
-            Utils:SleepTickRandom(0)
-            API.DoAction_Tile(WPOINT.new(math.floor(killableEchoes[1].TileX)/512, math.floor(killableEchoes[1].TileY)/512, math.floor(killableEchoes[1].TileZ)/512))
-        elseif #killableEchoes == 1 then
-            API.DoAction_Dive_Tile(WPOINT.new(math.floor(killableEchoes[1].TileX)/512, math.floor(killableEchoes[1].TileY)/512, math.floor(killableEchoes[1].TileZ)/512))
-            Utils:SleepTickRandom(0)
-            API.DoAction_Tile(WPOINT.new(math.floor(killableEchoes[1].TileX)/512, math.floor(killableEchoes[1].TileY)/512, math.floor(killableEchoes[1].TileZ)/512))
+            if #killableEchoes == 2 then
+                API.DoAction_Dive_Tile(WPOINT.new(math.floor(killableEchoes[2].TileX)/512, math.floor(killableEchoes[2].TileY)/512, math.floor(killableEchoes[1].TileZ)/512))
+                Utils:SleepTickRandom(0)
+                API.DoAction_Tile(WPOINT.new(math.floor(killableEchoes[1].TileX)/512, math.floor(killableEchoes[1].TileY)/512, math.floor(killableEchoes[1].TileZ)/512))
+            elseif #killableEchoes == 1 then
+                API.DoAction_Dive_Tile(WPOINT.new(math.floor(killableEchoes[1].TileX)/512, math.floor(killableEchoes[1].TileY)/512, math.floor(killableEchoes[1].TileZ)/512))
+                Utils:SleepTickRandom(0)
+                API.DoAction_Tile(WPOINT.new(math.floor(killableEchoes[1].TileX)/512, math.floor(killableEchoes[1].TileY)/512, math.floor(killableEchoes[1].TileZ)/512))
+            end
         end
     end
 
