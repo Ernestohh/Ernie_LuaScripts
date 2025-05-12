@@ -88,6 +88,7 @@ function KerapacLightning:AvoidLightningBolts()
         self:WhereToAvoid()
         State.hasDodged = true
         State.canAttack = true
+        State.islightningPhase = false
         Utils:SleepTickRandom(1)
         Combat:AttackKerapac()
     end

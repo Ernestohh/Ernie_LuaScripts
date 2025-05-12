@@ -65,8 +65,10 @@ while (API.Read_LoopyLoop()) do
             Combat:HandleCombatState(State:UpdateStateFromAnimation(Combat:GetKerapacAnimation()))
         elseif State.isInBattle and API.Read_LoopyLoop() and not State.isPlayerDead and State.isHardMode then
             if State.kerapacPhase >= 4 then
+                Lightning:AvoidLightningBolts()
                 HardMode:Phase4Setup()
                 if State.isPhase4SetupComplete then 
+                    Lightning:AvoidLightningBolts()
                     HardMode:HandlePhase4()
                     Combat:ManagePlayer()
                     Combat:ManageBuffs()
