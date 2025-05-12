@@ -374,6 +374,7 @@ function KerapacCombat:HandleBossDeath()
     State.isInBattle = false
     State.isTimeToLoot = true
     State.canAttack = false
+    Data.totalKills = Data.totalKills + 1
 end
 
 function KerapacCombat:HandleBossPhase()

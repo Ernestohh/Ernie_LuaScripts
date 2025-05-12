@@ -22,6 +22,8 @@ while (API.Read_LoopyLoop()) do
     end
     
     if State.startScript then
+        API.SetDrawLogs(false)
+        Utils:TrackingData()
         if not State.isInBattle and not State.isTimeToLoot then
             if not State.isInWarsRetreat then
                 Preparation:CheckStartLocation()

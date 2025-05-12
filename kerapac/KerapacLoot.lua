@@ -38,7 +38,9 @@ function KerapacLoot:HandleLoot()
                     table.insert(lootInWindow, value.itemid1)
                 end
             end
-            
+            local rares = Utils:findMatchingValues(lootInWindow, Data.rareDrops)
+            Data.totalRares = Data.totalRares + #rares
+
             local inventorySlotsRemaining = Inventory:FreeSpaces() - #lootInWindow
             
             if inventorySlotsRemaining < 0 then

@@ -550,6 +550,16 @@ KerapacData.triplesMap = {
     [225 * 1000000 + 270 * 1000 + 315] = 7
 }
 
+KerapacData.rareDrops = {
+    51767, -- wristwraps
+    51843, -- codex
+    51812, -- scripture
+    51862, -- pet
+    51776, -- symbol
+    51779, -- gem
+    51782 -- shaft
+}
+
 KerapacData.deathGuardIds = {55524, 55532, 55540, 55528, 55536, 55544}
 KerapacData.omniGuardIds = {55484, 55480}
 KerapacData.deathSparkReady = 30127
@@ -585,5 +595,7 @@ KerapacData.kerapacClones = 28076
 KerapacData.summoningPointsForScroll = 20
 KerapacData.adrenalineCrystal = 114749
 KerapacData.timeWarpBuff = 15142
+KerapacData.totalKills = 0
+KerapacData.totalRares = 0
 
 return KerapacData

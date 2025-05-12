@@ -454,6 +454,24 @@ function KerapacUtils:AddIfNotExists(array, value)
     return true
 end
 
+function KerapacUtils:findMatchingValues(tbl1, tbl2)
+    local lookup = {}
+    local matches = {}
+
+    for _, value in ipairs(tbl1) do
+        lookup[value] = true
+    end
+
+    for _, value in ipairs(tbl2) do
+        if lookup[value] and not matches[value] then
+            table.insert(matches, value)
+            matches = true
+        end
+    end
+
+    return matches
+end
+
 function KerapacUtils:WarsTeleport()
     API.DoAction_Ability("War's Retreat", 1, API.OFF_ACT_GeneralInterface_route, false)
     self:SleepTickRandom(10)
@@ -485,6 +503,19 @@ function KerapacUtils:forceUseTimeWarpBuff()
         API.DoAction_Interface(0x2e, 0xffffffff, 1, 743, 1, -1, API.OFF_ACT_GeneralInterface_route)
         State.hasTimeWarpBuff = false
     end
+end
+
+function KerapacUtils:TrackingData()
+    local data = {
+        { "Ernie's Kerapac Bosser ", "Version: " .. Data.version },
+        { "-------", "-------" },
+        { "Data:",API.ScriptRuntimeString() },
+        { "- Total Kills", Data.totalKills},
+        { "- Total Rares", Data.totalRares},
+        { "-------", "-------" },
+    }
+
+    API.DrawTable(data)
 end
 
 return KerapacUtils
