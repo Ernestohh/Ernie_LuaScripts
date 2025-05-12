@@ -259,8 +259,9 @@ function KerapacUtils:DrinkPrayer()
     elseif string.find(prayerName, "Super restore") then
         prayerAB = API.GetABs_name1("Super restore potion")
     end
-
-    API.DoAction_Ability_Direct(prayerAB, 1, API.OFF_ACT_GeneralInterface_route)
+    if prayerAB ~= nil then
+       API.DoAction_Ability_Direct(prayerAB, 1, API.OFF_ACT_GeneralInterface_route) 
+    end
     Logger:Info("Drinking prayer potion")
     State.drinkRestoreTicks = API.Get_tick()
 end
@@ -297,7 +298,9 @@ function KerapacUtils:DrinkOverload()
         overloadAB = API.GetABs_name1("Elder overload potion")
     end
 
-    API.DoAction_Ability_Direct(overloadAB, 1, API.OFF_ACT_GeneralInterface_route)
+    if overloadAB ~= nil then
+        API.DoAction_Ability_Direct(overloadAB, 1, API.OFF_ACT_GeneralInterface_route) 
+    end
     Logger:Info("Drinking overload potion")
     State.drinkRestoreTicks = API.Get_tick()
 end
@@ -322,7 +325,9 @@ function KerapacUtils:DrinkWeaponPoison()
         end
     end
     
-    API.DoAction_Ability_Direct(weaponPoisonAB, 1, API.OFF_ACT_GeneralInterface_route)
+    if weaponPoisonAB ~= nil then
+        API.DoAction_Ability_Direct(weaponPoisonAB, 1, API.OFF_ACT_GeneralInterface_route)
+    end
     Logger:Info("Applying weapon poison")
     State.drinkRestoreTicks = API.Get_tick()
 end
