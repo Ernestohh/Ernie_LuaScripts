@@ -461,21 +461,21 @@ function KerapacUtils:AddIfNotExists(array, value)
     return true
 end
 
-function KerapacUtils:findMatchingValues(tbl1, tbl2)
-    local lookup = {}
+function KerapacUtils:findMatchingValues(lootTable, rareDropsTable)
     local matches = {}
-
-    for _, value in ipairs(tbl1) do
-        lookup[value] = true
-    end
-
-    for _, value in ipairs(tbl2) do
-        if lookup[value] and not matches[value] then
-            table.insert(matches, value)
-            matches[value] = true
+    
+    for _, itemId in ipairs(lootTable) do
+        if rareDropsTable[itemId] then
+            local dropData = {
+                id = itemId,
+                name = rareDropsTable[itemId].name,
+                thumbnail = rareDropsTable[itemId].icon,
+                message = nil
+            }
+            table.insert(matches, dropData)
         end
     end
-
+    
     return matches
 end
 
@@ -524,6 +524,39 @@ function KerapacUtils:TrackingData()
     }
 
     API.DrawTable(data)
+end
+
+function KerapacUtils:SendDropNotification(rareDrop)
+    local embed = {
+        title = string.format("Oops Kerapac dropped the following item for you %s", rareDrop.name),
+        description = rareDrop.message,
+        color = 8380656,
+        author = {
+            name = "Ernie's Kerapac Bosser ",
+            icon_url = "https://media.tenor.com/A-dUfi3bkMoAAAAj/pato-juan.gif"
+        },
+        thumbnail = {url = rareDrop.thumbnail},
+        fields = {
+            {name = "Kill Number", value = tostring(Data.totalKills), inline = true},
+            {name = "Runtime", value = API.ScriptRuntimeString(), inline = true}
+        }
+    }
+    
+    local payload = {
+        content = Data.discordUserId or "",
+        embeds = {embed}
+    }
+    
+    local jsonPayload = API.JsonEncode(payload)
+    local commandPayload = jsonPayload:gsub('"', '\\"')
+    
+    local command = string.format(
+        'curl.exe -X POST -H "Content-Type: application/json" -d "%s" "%s"',
+        commandPayload,
+        Data.discordWebhookUrl
+    )
+    
+    return os.execute(command)
 end
 
 return KerapacUtils

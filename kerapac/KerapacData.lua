@@ -1,11 +1,13 @@
 local KerapacData = {}
 
-KerapacData.version = "9.0"
+KerapacData.version = "10.0"
 
 -- User configuration - modify these values
 KerapacData.partyLeader = nil -- replace nil with playername like this "Bob" 
 KerapacData.partyMembers = {} -- Add all player names including partyleader like this {"Bob", "Jo", "Mama"}
 KerapacData.bankPin = nil     -- replace nil with your bank pin like this 1234 don't add ""
+KerapacData.discordWebhookUrl = "" -- add your Discord Webhook URL here
+KerapacData.discordUserId = "" -- add your Discord User ID here
 
 KerapacData.prayerType = {
     Curses = { name = "Curses" },
@@ -551,13 +553,41 @@ KerapacData.triplesMap = {
 }
 
 KerapacData.rareDrops = {
-    51767, -- wristwraps
-    51843, -- codex
-    51812, -- scripture
-    51862, -- pet
-    51776, -- symbol
-    51779, -- gem
-    51782 -- shaft
+    [51767] = {
+        name = "Kerapac's wrist wraps",
+        icon = "https://runescape.wiki/images/Kerapac%27s_wrist_wraps_detail.png?17d3d",
+        message = "These surely will keep my hands warm"
+    },
+    [51843] = {
+        name = "Greater Concentrated blast ability codex",
+        icon = "https://runescape.wiki/images/Greater_Concentrated_blast_ability_codex_detail.png?97097",
+        message = "Ah yes a book"
+    },
+    [51812] = {
+        name = "Scripture of Jas",
+        icon = "https://runescape.wiki/images/Scripture_of_Jas_detail.png?48529",
+        message = "Ah yes another book"
+    },
+    [51862] = {
+        name = "Kerapac's mask piece",
+        icon = "https://runescape.wiki/images/Kerapac%27s_mask_piece_detail.png?e1b0b",
+        message = "Look at this lil fella, what a funny little character"
+    },
+    [51776] = {
+        name = "Fractured Armadyl symbol",
+        icon = "https://runescape.wiki/images/Fractured_Armadyl_symbol_detail.png?30c48",
+        message = "What an odd looking symbol"
+    },
+    [51779] = {
+        name = "Fractured stabilisation gem",
+        icon = "https://runescape.wiki/images/Fractured_stabilisation_gem_detail.png?d32f2",
+        message = "A diamond is a better looking gem"
+    },
+    [51782] = {
+        name = "Staff of Armadyl's fractured shaft",
+        icon = "https://runescape.wiki/images/thumb/Staff_of_Armadyl%27s_fractured_shaft_detail.png/800px-Staff_of_Armadyl%27s_fractured_shaft_detail.png?5aae3",
+        message = "Hehe get shafted"      
+    }
 }
 
 KerapacData.deathGuardIds = {55524, 55532, 55540, 55528, 55536, 55544}

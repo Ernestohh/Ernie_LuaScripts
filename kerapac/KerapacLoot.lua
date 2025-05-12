@@ -40,6 +40,11 @@ function KerapacLoot:HandleLoot()
             end
             local rares = Utils:findMatchingValues(lootInWindow, Data.rareDrops)
             Data.totalRares = Data.totalRares + #rares
+            if #rares > 0 then
+                for _, rareDrop in ipairs(rares) do
+                    Utils:SendDropNotification(rareDrop)
+                end
+            end
 
             local inventorySlotsRemaining = Inventory:FreeSpaces() - #lootInWindow
             
