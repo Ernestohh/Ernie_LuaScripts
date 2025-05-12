@@ -543,7 +543,7 @@ function KerapacUtils:SendDropNotification(rareDrop)
     }
     
     local payload = {
-        content = Data.discordUserId or "",
+        content = "^<@"..Data.discordUserId.."^>",
         embeds = {embed}
     }
     
