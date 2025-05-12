@@ -133,7 +133,7 @@ function KerapacLightning:WhereToAvoid()
             end
             if #tiles > 0 then
                 self:PerformDodge(self:CreateSafeWPOINT(tiles[1]))
-                Utils:SleepTickRandom(9)
+                Utils:SleepTickRandom(8)
                 self:PerformDodge(self:CreateSafeWPOINT(tiles[2]))
             end
         end
@@ -178,6 +178,8 @@ function KerapacLightning:WhereToAvoid()
             end
             if #tiles > 0 then
                 self:PerformDodge(self:CreateSafeWPOINT(tiles[1]))
+                Utils:SleepTickRandom(8)
+                self:PerformDodge(self:CreateSafeWPOINT(tiles[2]))
             end
         end
     end
