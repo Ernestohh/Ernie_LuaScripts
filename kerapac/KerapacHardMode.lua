@@ -105,7 +105,7 @@ function KerapacHardMode:HandlePhase4()
         if not State.isEchoesDead then
             State.isEchoesDead = true
         end
-        if not targetInfo.Target_Name == "Kerapac, the bound" then
+        if targetInfo.Target_Name ~= "Kerapac, the bound" then
             Combat:AttackKerapac()
         end  
     end
