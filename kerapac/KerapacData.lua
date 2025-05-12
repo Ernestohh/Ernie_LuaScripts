@@ -597,5 +597,6 @@ KerapacData.adrenalineCrystal = 114749
 KerapacData.timeWarpBuff = 15142
 KerapacData.totalKills = 0
 KerapacData.totalRares = 0
+KerapacData.totalDeaths = 0
 
 return KerapacData

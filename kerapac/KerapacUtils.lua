@@ -511,6 +511,7 @@ function KerapacUtils:TrackingData()
         { "-------", "-------" },
         { "Data:",API.ScriptRuntimeString() },
         { "- Total Kills", Data.totalKills},
+        { "- Total Deaths", Data.totalDeaths},
         { "- Total Rares", Data.totalRares},
         { "-------", "-------" },
     }

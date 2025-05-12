@@ -220,6 +220,7 @@ end
 function KerapacState:CheckPlayerDeath()
     if API.GetHP_() <= 0 and not self.isPlayerDead then
         self.isPlayerDead = true
+        Data.totalDeaths = Data.totalDeaths + 1
         Logger:Warn("Player died!")
     end
 end
