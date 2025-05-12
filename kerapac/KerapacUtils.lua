@@ -387,12 +387,14 @@ end
 function KerapacUtils:RenewFamiliar()
     if API.Buffbar_GetIDstatus(26095).found then
         local timeRemaining = tonumber(string.match(API.Buffbar_GetIDstatus(26095).text, "(-?%d+%.?%d*)"))
-        if timeRemaining <= 1 then
-            if Familiars:HasFamiliar() then
-                if(Inventory:ContainsAny(Data.summoningPouches)) then
-                    API.DoAction_Interface(0xffffffff,0xffffffff,1,662,53,-1,API.OFF_ACT_GeneralInterface_route)
-                    self:SleepTickRandom(1)
-                    Logger:Info("Renewing familiar")
+        if timeRemaining ~=nil then
+            if timeRemaining <= 1 then
+                if Familiars:HasFamiliar() then
+                    if(Inventory:ContainsAny(Data.summoningPouches)) then
+                        API.DoAction_Interface(0xffffffff,0xffffffff,1,662,53,-1,API.OFF_ACT_GeneralInterface_route)
+                        self:SleepTickRandom(1)
+                        Logger:Info("Renewing familiar")
+                    end
                 end
             end
         end
