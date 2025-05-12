@@ -28,6 +28,11 @@ function KerapacPreparation:HandlePrayerRestore()
 end
 
 function KerapacPreparation:HandleBanking()
+    if Inventory:Contains(24154) then
+        API.DoAction_Inventory1(24154,0,8,API.OFF_ACT_GeneralInterface_route2)
+        Utils:SleepTickRandom(2)
+        API.DoAction_Interface(0xffffffff,0xffffffff,0,1183,5,-1,API.OFF_ACT_GeneralInterface_Choose_option)
+    end
     API.DoAction_Object1(0x33, API.OFF_ACT_GeneralObject_route3, { 114750 }, 50)
     API.WaitUntilMovingEnds(10, 4)
     UI:HandleBankPin()
