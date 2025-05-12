@@ -467,7 +467,7 @@ function KerapacUtils:findMatchingValues(tbl1, tbl2)
     for _, value in ipairs(tbl2) do
         if lookup[value] and not matches[value] then
             table.insert(matches, value)
-            matches = true
+            matches[value] = true
         end
     end
 

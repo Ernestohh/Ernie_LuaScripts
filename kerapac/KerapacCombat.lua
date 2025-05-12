@@ -800,10 +800,9 @@ function KerapacCombat:CastNextAbility()
 
     if not API.DeBuffbar_GetIDstatus(55524).found
     and not State.isPhasing
-    and not State.islightningPhase
     and State.necrosisStacks > 11
     and API.GetAddreline_() >= 25 then
-        if (State.kerapacPhase == 3 and not State.islightningPhase) or (State.kerapacPhase ~= 3 and not State.islightningPhase) then
+        if (State.kerapacPhase == 3 and not State.islightningPhase) or (State.kerapacPhase ~= 3) then
             if State.hasDeathGuardEquipped and API.GetABs_name1("Weapon Special Attack").enabled then
                 self:UseSpecialAttackAbility()
                 return
@@ -816,9 +815,8 @@ function KerapacCombat:CastNextAbility()
 
     if State.necrosisStacks > 11 
     and not API.Buffbar_GetIDstatus(Data.deathSparkReady).found
-    and not State.islightningPhase
     and not State.isPhasing then
-        if (State.kerapacPhase == 3 and not State.islightningPhase) or (State.kerapacPhase ~= 3 and not State.islightningPhase) then
+        if (State.kerapacPhase == 3 and not State.islightningPhase) or (State.kerapacPhase ~= 3) then
             self:UseFingerOfDeathAbility()
             return
         end
@@ -826,10 +824,9 @@ function KerapacCombat:CastNextAbility()
 
     if not API.DeBuffbar_GetIDstatus(55524).found
     and not State.isPhasing
-    and not State.islightningPhase
     and State.necrosisStacks > 5
     and API.GetAddreline_() >= 25 then
-        if (State.kerapacPhase == 3 and not State.islightningPhase) or (State.kerapacPhase ~= 3 and not State.islightningPhase) then
+        if (State.kerapacPhase == 3 and not State.islightningPhase) or (State.kerapacPhase ~= 3) then
             if State.hasDeathGuardEquipped and API.GetABs_name1("Weapon Special Attack").enabled then
                 self:UseSpecialAttackAbility()
                 return
@@ -842,10 +839,9 @@ function KerapacCombat:CastNextAbility()
 
     if State.residualSoulsStack > 4 
     and Data.extraAbilities.volleyOfSoulsAbility.AB.enabled 
-    and not State.islightningPhase
     and not API.Buffbar_GetIDstatus(Data.deathSparkReady).found
     and not State.isPhasing then
-        if (State.kerapacPhase == 3 and not State.islightningPhase) or (State.kerapacPhase ~= 3 and not State.islightningPhase) then
+        if (State.kerapacPhase == 3 and not State.islightningPhase) or (State.kerapacPhase ~= 3) then
             self:UseVolleyOfSoulsAbility()
             return
         end
@@ -853,7 +849,6 @@ function KerapacCombat:CastNextAbility()
 
     if not API.DeBuffbar_GetIDstatus(55524).found
     and not State.isPhasing
-    and not State.islightningPhase
     and State.necrosisStacks > 11
     and API.GetAddreline_() >= 25 then
         if State.hasDeathGuardEquipped and API.GetABs_name1("Weapon Special Attack").enabled then
@@ -867,7 +862,6 @@ function KerapacCombat:CastNextAbility()
 
     if State.necrosisStacks > 11 
     and not API.Buffbar_GetIDstatus(Data.deathSparkReady).found
-    and not State.islightningPhase
     and not State.isPhasing then
         self:UseFingerOfDeathAbility()
         return
@@ -875,7 +869,6 @@ function KerapacCombat:CastNextAbility()
 
     if not API.DeBuffbar_GetIDstatus(55524).found
     and not State.isPhasing
-    and not State.islightningPhase
     and State.necrosisStacks > 5
     and API.GetAddreline_() >= 25 then
         if State.hasDeathGuardEquipped and API.GetABs_name1("Weapon Special Attack").enabled then
@@ -888,7 +881,6 @@ function KerapacCombat:CastNextAbility()
     end
 
     if State.residualSoulsStack > 2
-    and not State.islightningPhase
     and Data.extraAbilities.volleyOfSoulsAbility.AB.enabled 
     and not API.Buffbar_GetIDstatus(Data.deathSparkReady).found
     and not State.isPhasing then
@@ -1065,7 +1057,7 @@ function KerapacCombat:CastNextAbility()
                 self:UseWarpTime()
             end
         end
-        if (State.kerapacPhase == 3 and not State.islightningPhase) or (State.kerapacPhase ~= 3 and not State.islightningPhase) then
+        if (State.kerapacPhase == 3 and not State.islightningPhase) or (State.kerapacPhase ~= 3) then
             self:UseDeathSkullsAbility()
             Utils:SleepTickRandom(1)
             Utils:DrinkAdrenalinePotion()
@@ -1100,7 +1092,7 @@ function KerapacCombat:CastNextAbility()
     and not API.DeBuffbar_GetIDstatus(55480).found
     and not State.isPhasing
     and API.GetAddreline_() >= 30 then
-        if (State.kerapacPhase == 3 and not State.islightningPhase) or (State.kerapacPhase ~= 3 and not State.islightningPhase) then
+        if (State.kerapacPhase == 3 and not State.islightningPhase) or (State.kerapacPhase ~= 3) then
             if State.hasOmniGuardEquipped and API.GetABs_name1("Weapon Special Attack").enabled then
                 self:UseSpecialAttackAbility()
             elseif API.GetABs_name1("Essence of Finality").enabled then
@@ -1113,7 +1105,7 @@ function KerapacCombat:CastNextAbility()
     and not State.isPhasing
     and State.necrosisStacks > 5
     and API.GetAddreline_() >= 25 then
-        if (State.kerapacPhase == 3 and not State.islightningPhase) or (State.kerapacPhase ~= 3 and not State.islightningPhase) then
+        if (State.kerapacPhase == 3 and not State.islightningPhase) or (State.kerapacPhase ~= 3) then
             if State.hasDeathGuardEquipped and API.GetABs_name1("Weapon Special Attack").enabled then
                 self:UseSpecialAttackAbility()
             elseif API.GetABs_name1("Essence of Finality").enabled then
@@ -1139,7 +1131,7 @@ function KerapacCombat:CastNextAbility()
     if State.necrosisStacks > 5 
     and not API.Buffbar_GetIDstatus(Data.deathSparkReady).found
     and not State.isPhasing then
-        if (State.kerapacPhase == 3 and not State.islightningPhase) or (State.kerapacPhase ~= 3 and not State.islightningPhase) then
+        if (State.kerapacPhase == 3 and not State.islightningPhase) or (State.kerapacPhase ~= 3) then
             self:UseFingerOfDeathAbility()
             return
         end
@@ -1149,7 +1141,7 @@ function KerapacCombat:CastNextAbility()
     and Data.extraAbilities.volleyOfSoulsAbility.AB.enabled 
     and not API.Buffbar_GetIDstatus(Data.deathSparkReady).found
     and not State.isPhasing then
-        if (State.kerapacPhase == 3 and not State.islightningPhase) or (State.kerapacPhase ~= 3 and not State.islightningPhase) then
+        if (State.kerapacPhase == 3 and not State.islightningPhase) or (State.kerapacPhase ~= 3) then
             self:UseVolleyOfSoulsAbility()
             return
         end
@@ -1160,7 +1152,7 @@ function KerapacCombat:CastNextAbility()
     and API.GetAddreline_() >= Data.extraAbilities.bloatAbility.threshold 
     and not API.Buffbar_GetIDstatus(Data.deathSparkReady).found
     and not State.hasBloatDebuff then
-        if (State.kerapacPhase == 3 and not State.islightningPhase) or (State.kerapacPhase ~= 3 and not State.islightningPhase) then
+        if (State.kerapacPhase == 3 and not State.islightningPhase) or (State.kerapacPhase ~= 3) then
             self:UseBloatAbility()
             return
         end

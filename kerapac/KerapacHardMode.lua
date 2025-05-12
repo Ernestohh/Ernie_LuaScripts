@@ -49,6 +49,7 @@ function KerapacHardMode:Phase4Setup()
     
     State.isPhase4SetupComplete = true
     State.isPhasing = false
+    State.islightningPhase = false
     State.canAttack = true
     
     Logger:Info("Phase 4 setup complete")
