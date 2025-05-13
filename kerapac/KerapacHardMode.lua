@@ -91,18 +91,18 @@ function KerapacHardMode:HandlePhase4()
         printed = true
     end
     if northEcho ~= nil and not State.isNorthEchoDead then
-        if northEcho[1].Anim == 33493 then
+        if northEcho[1] ~= nil and northEcho[1].Anim == 33493 then
         State.isNorthEchoDead = true
         end
     end
     if westEcho ~= nil and not State.isWestEchoDead then
-        if westEcho[1].Anim == 33493 then
+        if westEcho[1] ~= nil and westEcho[1].Anim == 33493 then
         State.isWestEchoDead = true
         end
     end
     
     if southEcho ~= nil and not State.isSouthEchoDead then
-        if southEcho[1].Anim == 33493 then
+        if southEcho[1] ~= nil and southEcho[1].Anim == 33493 then
         State.isSouthEchoDead = true
         end
     end
