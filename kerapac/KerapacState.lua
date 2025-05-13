@@ -72,6 +72,7 @@ local KerapacState = {
     isMeleePrayEnabled = false,
     isSoulSplitEnabled = false,
     isFullManualEnabled = false,
+    isAutoRetaliateDisabled = false,
     
     canAttack = true,
     

@@ -505,6 +505,25 @@ function KerapacUtils:handleTimeWarpBuff()
     end
 end
 
+function KerapacUtils:handleCombatMode()
+    if State.isFullManualEnabled then return end
+    if API.VB_FindPSettinOrder(627, 0).state == 1073750353 then
+        State.isFullManualEnabled = true
+        self:SleepTickRandom(1)
+    else
+        API.DoAction_Interface(0xffffffff,0xffffffff,4,1430,265,-1,API.OFF_ACT_GeneralInterface_route)
+        self:SleepTickRandom(1)
+    end
+    if State.isAutoRetaliateDisabled then return end
+    if API.VB_FindPSettinOrder(462, 0).state == 1 then
+        State.isAutoRetaliateDisabled = true
+        self:SleepTickRandom(1)
+    else
+        API.DoAction_Interface(0xffffffff,0xffffffff,1,1430,57,-1,API.OFF_ACT_GeneralInterface_route)
+        self:SleepTickRandom(1)
+    end
+end
+
 function KerapacUtils:forceUseTimeWarpBuff()
     if State.hasTimeWarpBuff then
         API.DoAction_Interface(0x2e, 0xffffffff, 1, 743, 1, -1, API.OFF_ACT_GeneralInterface_route)

@@ -15,6 +15,7 @@ API.SetMaxIdleTime(5)
 API.Write_fake_mouse_do(false)
 UI:InitializeUI()
 Combat:InitAbilities()
+Utils:handleCombatMode()
 
 while (API.Read_LoopyLoop()) do
     if State.guiVisible then
