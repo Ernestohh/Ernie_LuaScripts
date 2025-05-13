@@ -73,6 +73,7 @@ local KerapacState = {
     isSoulSplitEnabled = false,
     isFullManualEnabled = false,
     isAutoRetaliateDisabled = false,
+    isAbilityBarsValidated = false,
     
     canAttack = true,
     

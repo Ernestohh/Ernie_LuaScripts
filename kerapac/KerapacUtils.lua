@@ -373,6 +373,7 @@ function KerapacUtils:CheckForScripture()
 end
 
 function KerapacUtils:ValidateAbilityBars()
+    if State.isAbilityBarsValidated then return end
     local hasFood = Inventory:ContainsAny(Data.foodItems)
     local hasEmergencyFood = Inventory:ContainsAny(Data.emergencyFoodItems)
     local hasEmergencyDrink = Inventory:ContainsAny(Data.emergencyDrinkItems)
