@@ -87,7 +87,7 @@ function KerapacCombat:CheckAvailableBuffs()
         State.hasSplitSoul = Data.extraAbilities.splitSoulAbility.AB.enabled
     end
     
-    self:CheckForScripture()
+    Utils:CheckForScripture()
     
     Logger:Debug("Buff check complete")
 end
@@ -308,25 +308,6 @@ function KerapacCombat:DisablePassivePrayer()
     end
 end
 
-function KerapacCombat:CheckForScripture()
-    if API.Container_Get_s(94, Data.extraBuffs.scriptureOfJas.itemId).item_id > 0 then
-        State.scripture = Data.extraBuffs.scriptureOfJas
-        State.isScriptureEquipped = true
-    end
-    if API.Container_Get_s(94, Data.extraBuffs.scriptureOfWen.itemId).item_id > 0 then
-        State.scripture = Data.extraBuffs.scriptureOfWen
-        State.isScriptureEquipped = true
-    end
-    if API.Container_Get_s(94, Data.extraBuffs.scriptureOfFul.itemId).item_id > 0 then
-        State.scripture = Data.extraBuffs.scriptureOfFul
-        State.isScriptureEquipped = true
-    end
-    if API.Container_Get_s(94, Data.extraBuffs.scriptureOfAmascut.itemId).item_id > 0 then
-        State.scripture = Data.extraBuffs.scriptureOfAmascut
-        State.isScriptureEquipped = true
-    end
-end
-
 function KerapacCombat:EnableScripture(book)
     if book.AB.enabled and not API.Buffbar_GetIDstatus(book.itemId).found then
         API.DoAction_Ability_check(book.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
@@ -346,7 +327,7 @@ function KerapacCombat:CheckForStun()
 end
 
 function KerapacCombat:AttackKerapac()
-    return API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { self:GetKerapacInformation().Id }, 50)
+    return API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { self:GetKerapacInformation().Id }, 100)
 end
 
 function KerapacCombat:ManageBuffs()
@@ -690,16 +671,16 @@ end
 function KerapacCombat:CastNextAbility()
     self:InitAbilities()
     
-    local attackTick = API.VB_FindPSettinOrder(4501).state
+    --local attackTick = API.VB_FindPSettinOrder(4501).state
     local timeWarpActionButton = API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time"
-    if attackTick == State.lastAttackTick then return end
+    --if attackTick == State.lastAttackTick then return end
     if not (API.Get_tick() - State.globalCooldownTicks > 2) then return end
     if not State.canAttack then return end
     
     State.hasBloatDebuff = self:CheckForBloatOnTarget()
     State.necrosisStacks = API.VB_FindPSettinOrder(10986).state
     State.residualSoulsStack = API.VB_FindPSettinOrder(11035).state
-    State.lastAttackTick = attackTick
+    --State.lastAttackTick = attackTick
     State.globalCooldownTicks = API.Get_tick()
     
     self:CheckForSplitSoul()

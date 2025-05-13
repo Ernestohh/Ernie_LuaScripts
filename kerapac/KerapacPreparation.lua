@@ -67,6 +67,8 @@ function KerapacPreparation:PrepareForBattle()
         "Food:\nRegular: %s\nEmergency Food: %s\nEmergency Drink: %s",
         Utils:WhichFood(), Utils:WhichEmergencyFood(), Utils:WhichEmergencyDrink()
     ))
+
+    Utils:ValidateAbilityBars()
     
     if not Inventory:ContainsAny(Data.foodItems) and 
        not Inventory:ContainsAny(Data.emergencyFoodItems) and 
@@ -74,7 +76,7 @@ function KerapacPreparation:PrepareForBattle()
         Logger:Error("No food items in inventory! Stopping script for safety.")
         State:StopScript()
         return
-       end
+    end
     
     State.isPrepared = true
     Logger:Info("Ready for battle")

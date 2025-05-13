@@ -183,15 +183,11 @@ function KerapacUtils:EatFood()
     local emergencyFoodAB = nil
     local emergencyDrinkAB = nil
     local eatFoodAB = API.GetABs_name1(self:WhichFood())
-    if eatFoodAB.slot == 0 then
-        eatFoodAB = API.GetABs_name1("Eat Food")
-    end
     if string.find(string.lower(self:WhichEmergencyFood()), "blue blubber") then
         emergencyFoodAB = API.GetABs_name1("Blue blubber jellyfish")
     elseif string.find(string.lower(self:WhichEmergencyFood()), "green blubber") then
         emergencyFoodAB = API.GetABs_name1("Green blubber jellyfish")
     end
-    
     if string.find(string.lower(self:WhichEmergencyDrink()), "super guthix") then
         emergencyDrinkAB = API.GetABs_name1("Super Guthix rest")
     elseif string.find(string.lower(self:WhichEmergencyDrink()), "guthix") then
@@ -355,6 +351,281 @@ function KerapacUtils:DrinkAdrenalinePotion()
     API.DoAction_Ability_Direct(adrenalineAB, 1, API.OFF_ACT_GeneralInterface_route)
     Logger:Info("Drinking adrenaline potion")
     State.drinkRestoreTicks = API.Get_tick()
+end
+
+function KerapacUtils:CheckForScripture()
+    if API.Container_Get_s(94, Data.extraBuffs.scriptureOfJas.itemId).item_id > 0 then
+        State.scripture = Data.extraBuffs.scriptureOfJas
+        State.isScriptureEquipped = true
+    end
+    if API.Container_Get_s(94, Data.extraBuffs.scriptureOfWen.itemId).item_id > 0 then
+        State.scripture = Data.extraBuffs.scriptureOfWen
+        State.isScriptureEquipped = true
+    end
+    if API.Container_Get_s(94, Data.extraBuffs.scriptureOfFul.itemId).item_id > 0 then
+        State.scripture = Data.extraBuffs.scriptureOfFul
+        State.isScriptureEquipped = true
+    end
+    if API.Container_Get_s(94, Data.extraBuffs.scriptureOfAmascut.itemId).item_id > 0 then
+        State.scripture = Data.extraBuffs.scriptureOfAmascut
+        State.isScriptureEquipped = true
+    end
+end
+
+function KerapacUtils:ValidateAbilityBars()
+    local hasFood = Inventory:ContainsAny(Data.foodItems)
+    local hasEmergencyFood = Inventory:ContainsAny(Data.emergencyFoodItems)
+    local hasEmergencyDrink = Inventory:ContainsAny(Data.emergencyDrinkItems)
+    local hasAdrenPot = Inventory:ContainsAny(Data.adrenalinePotionItems)
+    local hasWeaponPoison = Inventory:ContainsAny(Data.weaponPoisonItems)
+    local hasOverload = Inventory:ContainsAny(Data.overloadItems)
+    local hasPrayer = Inventory:ContainsAny(Data.prayerRestoreItems)
+    local hasEnhancedExcal = Inventory:Contains("Enhanced Excalibur")
+    local hasAugEnhExcal = Inventory:Contains("Augmented enhanced Excalibur")
+    local hasVitPot =  Inventory:Contains("Powerburst of vitality (4)") or Inventory:Contains("Powerburst of vitality (3)") or Inventory:Contains("Powerburst of vitality (2)") or Inventory:Contains("Powerburst of vitality (1)")
+    local hasVulnBomb = Inventory:Contains("Vulnerability bomb")
+    local emergencyFoodAB = nil
+    local emergencyDrinkAB = nil
+    local adrenalineAB = nil
+    local weaponPoisonAB = nil
+    local overloadAB = nil
+    local excalAB = nil
+    local prayerAB = nil
+    local overloadName = self:WhichOverload()
+    local eatFoodAB = API.GetABs_name1(self:WhichFood())
+    local potionName = self:WhichAdrenalinePotion()
+    local prayerName = self:WhichPrayerRestore()
+    local items = {
+        "Weapon Poison",
+        "Weapon Poison++",
+        "Weapon Poison+++"
+    }
+    for i = 1, #items, 1 do
+        local ab = items[i]
+        local ability = API.GetABs_name1(ab)
+        if(ability.enabled)then
+            weaponPoisonAB = ability
+        end
+    end
+    self:CheckForScripture()
+    
+    if string.find(potionName, "Adrenaline renewal") then
+        adrenalineAB = API.GetABs_name1("drenaline renewal")
+    elseif string.find(potionName, "Adrenaline potion") then
+        adrenalineAB = API.GetABs_name1("Adrenaline potion")
+    elseif string.find(potionName, "Super adrenaline potion") then
+        adrenalineAB = API.GetABs_name1("Super adrenaline potion")
+    elseif string.find(potionName, "Replenishment potion") then
+        adrenalineAB = API.GetABs_name1("Replenishment potion")
+    elseif string.find(potionName, "Enhanced replenishment potion") then
+        adrenalineAB = API.GetABs_name1("Enhanced replenishment potion")
+    end
+    if string.find(string.lower(self:WhichEmergencyFood()), "blue blubber") then
+        emergencyFoodAB = API.GetABs_name1("Blue blubber jellyfish")
+    elseif string.find(string.lower(self:WhichEmergencyFood()), "green blubber") then
+        emergencyFoodAB = API.GetABs_name1("Green blubber jellyfish")
+    end
+    if string.find(string.lower(self:WhichEmergencyDrink()), "super guthix") then
+        emergencyDrinkAB = API.GetABs_name1("Super Guthix rest")
+    elseif string.find(string.lower(self:WhichEmergencyDrink()), "guthix") then
+        emergencyDrinkAB = API.GetABs_name1("Guthix rest")
+    elseif string.find(string.lower(self:WhichEmergencyDrink()), "super saradomin") then
+        emergencyDrinkAB = API.GetABs_name1("Super Saradomin brew")
+    elseif string.find(string.lower(self:WhichEmergencyDrink()), "saradomin") then
+        emergencyDrinkAB = API.GetABs_name1("Saradomin brew")
+    end
+
+    if string.find(overloadName, "Overload") then
+        overloadAB = API.GetABs_name1("Overload potion")
+    elseif string.find(overloadName, "Holy overload") then
+        overloadAB = API.GetABs_name1("Holy overload potion")
+    elseif string.find(overloadName, "Searing overload") then
+        overloadAB = API.GetABs_name1("Searing overload potion")
+    elseif string.find(overloadName, "Overload salve") then
+        overloadAB = API.GetABs_name1("Overload salve")
+    elseif string.find(overloadName, "Aggroverload") then
+        overloadAB = API.GetABs_name1("Aggroverload")
+    elseif string.find(overloadName, "Holy aggroverload") then
+        overloadAB = API.GetABs_name1("Holy aggroverload")
+    elseif string.find(overloadName, "Supreme overload salve") then
+        overloadAB = API.GetABs_name1("Supreme overload salve")
+    elseif string.find(overloadName, "Elder overload salve") then
+        overloadAB = API.GetABs_name1("Elder overload salve")
+    elseif string.find(overloadName, "Supreme overload potion") then
+        overloadAB = API.GetABs_name1("Supreme overload potion")
+    elseif string.find(overloadName, "Elder overload potion") then
+        overloadAB = API.GetABs_name1("Elder overload potion")
+    end
+    
+    if string.find(prayerName, "Prayer") then
+        prayerAB = API.GetABs_name1("Prayer potion")
+    elseif string.find(prayerName, "Super prayer") then
+        prayerAB = API.GetABs_name1("Super prayer potion")
+    elseif string.find(prayerName, "Extreme prayer") then
+        prayerAB = API.GetABs_name1("Extreme prayer potion")
+    elseif string.find(prayerName, "Super restore") then
+        prayerAB = API.GetABs_name1("Super restore potion")
+    end
+
+    if hasEnhancedExcal then
+        excalAB = API.GetABs_name1("Enhanced Excalibur")
+    end
+    if hasAugEnhExcal then
+        excalAB = API.GetABs_name1("Augmented enhanced Excalibur")
+    end
+
+    if State.isHardMode then
+        if not hasVitPot then
+            local data = {
+                { "Ernie's Kerapac Bosser ", "Version: " .. Data.version },
+                { "-------", "-------" },
+                { "- Missing powerburst of vitality", ""},
+                { "-------", "-------" }
+            }
+        
+            API.DrawTable(data)
+            Logger:Error("No Powerburst of vitality found in Inventory")
+            API.Write_LoopyLoop(false)
+        end
+    end
+
+    local noFoodFound = false
+    local noEmergencyFoodFound = false
+    local noEmergencyDrinkFound = false
+    local noAdrenPotFound = false
+    local noWeapPoisonFound = false
+    local noOverloadFound = false
+    local noPrayerFound = false
+    local noExcalFound = false
+    local noScriptureFound = false
+    local noVulnBomb = false
+
+    if hasFood then
+        if not eatFoodAB.enabled then
+            noFoodFound = true
+        end
+    end
+
+    if hasEmergencyFood then
+        if not emergencyFoodAB.enabled then
+            noEmergencyFoodFound = true
+        end
+    end
+
+    if hasEmergencyDrink then
+        if not emergencyDrinkAB.enabled then
+            noEmergencyDrinkFound = true
+        end
+    end
+
+    if hasAdrenPot then
+        if not adrenalineAB.enabled then
+            noAdrenPotFound = true
+        end
+    end
+
+    if hasWeaponPoison then
+        if weaponPoisonAB == nil or not weaponPoisonAB.enabled then
+            noWeapPoisonFound = true
+        end
+    end
+
+    if hasOverload then
+        if not overloadAB.enabled then
+            noOverloadFound = true
+        end
+    end
+
+    if hasPrayer then
+        if not prayerAB.enabled then
+            noPrayerFound = true
+        end
+    end
+
+    if hasVulnBomb then
+        if not API.GetABs_name1("Vulnerability bomb").enabled then
+            noVulnBomb = true
+        end
+    end
+
+    if hasEnhancedExcal or hasAugEnhExcal then
+        if not excalAB.enabled then
+            noExcalFound = true
+        end
+    end
+
+    if State.isScriptureEquipped then
+        if not State.scripture.AB.enabled then
+            noScriptureFound = true
+        end
+    end
+
+    local message = ""
+    local hasAnyMissing = false
+    
+    if noFoodFound then 
+        message = message .. "Food\n"
+        hasAnyMissing = true
+    end
+
+    if noEmergencyFoodFound then
+        message = message .. "Emergency food\n"
+        hasAnyMissing = true
+    end
+
+    if noEmergencyDrinkFound then
+        message = message .. "Emergency drink\n"
+        hasAnyMissing = true
+    end
+
+    if noAdrenPotFound then
+        message = message .. "Adrenaline potion\n"
+        hasAnyMissing = true
+    end
+
+    if noWeapPoisonFound then
+        message = message .. "Weapon poison\n"
+        hasAnyMissing = true
+    end
+
+    if noOverloadFound then
+        message = message .. "Overload\n"
+        hasAnyMissing = true
+    end
+
+    if noPrayerFound then 
+        message = message .. "Prayer restore\n"
+        hasAnyMissing = true
+    end
+
+    if noVulnBomb then
+        message = message .. "Vulnerability bomb\n"
+        hasAnyMissing = true
+    end
+
+    if noExcalFound then 
+        message = message .. "Enhanced Excalibur\n"
+        hasAnyMissing = true
+    end
+
+    if noScriptureFound then 
+        message = message .. "Scripture\n"
+        hasAnyMissing = true
+    end
+
+    if hasAnyMissing then
+            local data = {
+        { "Ernie's Kerapac Bosser ", "Version: " .. Data.version },
+        { "-------", "-------" },
+        { "- Missing items on Ability bar", message},
+        { "-------", "-------" }
+    }
+
+    API.DrawTable(data)
+        Logger:Error("Your ability bar is missing the following: " .. message)
+        API.Write_LoopyLoop(false)
+    end
+
 end
 
 function KerapacUtils:SummonFamiliar()
