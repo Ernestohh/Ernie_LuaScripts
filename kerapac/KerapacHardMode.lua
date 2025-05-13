@@ -59,6 +59,11 @@ function KerapacHardMode:AttackEcho()
     API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { Data.kerapacClones }, 10)
 end
 
+function KerapacHardMode:AttackEchoInArea(botleft, topright)
+    API.DoAction_NPC_In_Area(0x2a, API.OFF_ACT_AttackNPC_route, {Data.kerapacClones}, 10, botleft, topright)
+end
+
+local printed = false
 function KerapacHardMode:HandlePhase4()
     if not (API.Get_tick() - State.phase4Ticks > 1) then return end
     
@@ -74,44 +79,68 @@ function KerapacHardMode:HandlePhase4()
         end
     end
     
-    local targetInfo = API.ReadTargetInfo() 
+    local targetInfo = API.ReadTargetInfo()
+
+    local northEcho = API.GetAllObjArray2({Data.kerapacClones}, 100, {1}, WPOINT.new(State.centerOfArenaPosition.x + Data.echoAreasMap.northEcho.echoSpot.x, State.centerOfArenaPosition.y + Data.echoAreasMap.northEcho.echoSpot.y, 1))
+    local westEcho = API.GetAllObjArray2({Data.kerapacClones}, 100, {1}, WPOINT.new(State.centerOfArenaPosition.x + Data.echoAreasMap.westEcho.echoSpot.x, State.centerOfArenaPosition.y + Data.echoAreasMap.westEcho.echoSpot.y, 1))
+    local southEcho = API.GetAllObjArray2({Data.kerapacClones}, 100, {1}, WPOINT.new(State.centerOfArenaPosition.x + Data.echoAreasMap.southEcho.echoSpot.x, State.centerOfArenaPosition.y + Data.echoAreasMap.southEcho.echoSpot.y, 1))
+    if not printed then
+        Logger:Info(#northEcho .. " North")
+        Logger:Info(#westEcho .. " West")
+        Logger:Info(#southEcho .. " South")
+        printed = true
+    end
+
+    if northEcho[1].Anim == 33493 then
+        State.isNorthEchoDead = true
+    end
+    if westEcho[1].Anim == 33493 then
+        State.isWestEchoDead = true
+    end
+    if southEcho[1].Anim == 33493 then
+        State.isSouthEchoDead = true
+    end
 
     if targetInfo.Target_Name ~= "Echo of Kerapac" then
         self:AttackEcho()
     end
 
-    if #killableEchoes == 2 and targetInfo.Hitpoints >= 95000 then
-        Logger:Debug("Amount of killable echoes: " .. #killableEchoes)
-        API.DoAction_Dive_Tile(State.kerapacEcho2)
+    if not State.isWestEchoDead then
+        if API.Math_DistanceW(API.PlayerCoord(), State.kerapacEcho3) > 2 then
+            API.DoAction_Dive_Tile(State.kerapacEcho3)
+            Utils:SleepTickRandom(0)
+            API.DoAction_Tile(State.kerapacEcho3)
+            Utils:SleepTickRandom(3)
+            self:AttackEchoInArea(WPOINT.new(State.centerOfArenaPosition.x + Data.echoAreasMap.westEcho.bottomLeft.x, State.centerOfArenaPosition.y + Data.echoAreasMap.westEcho.bottomLeft.y, 1), 
+                                    WPOINT.new(State.centerOfArenaPosition.x + Data.echoAreasMap.westEcho.topRight.x, State.centerOfArenaPosition.y + Data.echoAreasMap.westEcho.topRight.y, 1))
+        end
+    elseif not State.isSouthEchoDead then
+        if API.Math_DistanceW(API.PlayerCoord(), State.kerapacEcho2) > 2 then
+            API.DoAction_Dive_Tile(State.kerapacEcho2)
             Utils:SleepTickRandom(0)
             API.DoAction_Tile(State.kerapacEcho2)
-            self:AttackEcho()
-        for i = 1, #killableEchoes do
-            if killableEchoes[i].Distance < 3 then
-                API.DoAction_Tile(State.kerapacEcho2)
-            end
+            Utils:SleepTickRandom(3)
+            self:AttackEchoInArea(WPOINT.new(State.centerOfArenaPosition.x + Data.echoAreasMap.southEcho.bottomLeft.x, State.centerOfArenaPosition.y + Data.echoAreasMap.southEcho.bottomLeft.y, 1), 
+                                    WPOINT.new(State.centerOfArenaPosition.x + Data.echoAreasMap.southEcho.topRight.x, State.centerOfArenaPosition.y + Data.echoAreasMap.southEcho.topRight.y, 1))
         end
-    elseif #killableEchoes == 1 and targetInfo.Hitpoints >= 95000 then
-        Logger:Debug("Amount of killable echoes: " .. #killableEchoes)
-        API.DoAction_Dive_Tile(State.kerapacEcho1)
+    elseif not State.isNorthEchoDead then
+        if API.Math_DistanceW(API.PlayerCoord(), State.kerapacEcho1) > 2 then
+            API.DoAction_Dive_Tile(State.kerapacEcho1)
             Utils:SleepTickRandom(0)
             API.DoAction_Tile(State.kerapacEcho1)
-            self:AttackEcho()
-        for i = 1, #killableEchoes do
-            if killableEchoes[i].Distance < 3 then
-                API.DoAction_Tile(State.kerapacEcho1)
-            end
+            Utils:SleepTickRandom(3)
+            self:AttackEchoInArea(WPOINT.new(State.centerOfArenaPosition.x + Data.echoAreasMap.northEcho.bottomLeft.x, State.centerOfArenaPosition.y + Data.echoAreasMap.northEcho.bottomLeft.y, 1), 
+                                    WPOINT.new(State.centerOfArenaPosition.x + Data.echoAreasMap.northEcho.topRight.x, State.centerOfArenaPosition.y + Data.echoAreasMap.northEcho.topRight.y, 1))
         end
-    elseif #killableEchoes == 0 then
+    else
         if not State.isEchoesDead then
             State.isEchoesDead = true
         end
-        Combat:AttackKerapac() 
+        if targetInfo.Target_Name ~= "Kerapac, the bound" then
+            Combat:AttackKerapac() 
+        end
     end
 
-    if #killableEchoes > 0 and targetInfo.Hitpoints ~= 100000 then
-        Combat:ApplyVulnerability()
-    end
     State.phase4Ticks = API.Get_tick()
 end
 

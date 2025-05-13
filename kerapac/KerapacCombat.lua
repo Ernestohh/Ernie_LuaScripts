@@ -419,6 +419,9 @@ function KerapacCombat:ApplyVulnerability()
         API.DoAction_Ability_Direct(vulnAB, 1, API.OFF_ACT_GeneralInterface_route)
         if API.ReadTargetInfo().Target_Name == "Kerapac, the bound" then
             self:AttackKerapac()
+        elseif API.ReadTargetInfo().Target_Name == "Echo of Kerapac" then
+            local HardMode = require("kerapac/KerapacHardMode")
+            HardMode:AttackEcho()
         end
         Logger:Info("Found your tickle spot")
     end
@@ -1195,7 +1198,7 @@ function KerapacCombat:ManagePlayer()
     self:HandleResonance()
     self:EnablePassivePrayer()
     self:ApplyVulnerability()
-    Utils:HandleSpecialSummoning()
+    --Utils:HandleSpecialSummoning()
     Utils:EatFood()
     Utils:DrinkPrayer()
     self:EnablePassivePrayer()

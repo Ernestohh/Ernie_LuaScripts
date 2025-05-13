@@ -21,6 +21,9 @@ local KerapacState = {
     isPlayerDead = false,
     isFightStarted = false,
     isEchoesDead = false,
+    isNorthEchoDead = false,
+    isWestEchoDead = false,
+    isSouthEchoDead = false,
     
     isRiftDodged = false,
     isJumpDodged = true,
@@ -101,11 +104,7 @@ local KerapacState = {
     kerapacEcho1 = nil,
     kerapacEcho2 = nil,
     kerapacEcho3 = nil,
-    wave1Direction = nil,
-    wave2Direction = nil,
-    wave3Direction = nil,
-    currentTargetLp = nil,
-    
+
     Background = nil,
     PassivesDropdown = nil,
     StartButton = nil,
@@ -153,6 +152,9 @@ function KerapacState:Reset()
     self.isSoulSplitEnabled = false
     self.isMaxAdrenaline = false
     self.isEchoesDead = false
+    self.isNorthEchoDead = false
+    self.isWestEchoDead = false
+    self.isSouthEchoDead = false
     
     self.hasOverload = false
     self.hasAdrenalinePotion = false

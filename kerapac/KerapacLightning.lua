@@ -23,6 +23,7 @@ function KerapacLightning:PerformDodge(safeWPOINT)
         Logger:Info("Running to x: " .. safeWPOINT.x .. " y: " .. safeWPOINT.y)
         API.DoAction_Tile(safeWPOINT)
     end
+    Utils:SleepTickRandom(1)
 end
 
 function KerapacLightning:FindLightningDirections(bolts)

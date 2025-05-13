@@ -500,6 +500,24 @@ KerapacData.bossStateEnum = {
     }
 }
 
+KerapacData.echoAreasMap = {
+    northEcho = {
+        bottomLeft = {x = -6, y = 4},
+        topRight = {x = 4, y = 17},
+        echoSpot = {x = 0, y = 14}
+     },
+    westEcho = {
+        bottomLeft = {x = -17, y = -6},
+        topRight = {x = -7, y = 4},
+        echoSpot = {x = -14, y = 0}
+    },
+    southEcho ={
+        bottomLeft = {x = -4, y = -17},
+        topRight = {x = 6, y = -8},
+        echoSpot = {x = -1, y = -15}
+    }
+}
+
 KerapacData.deltaTileMap = {
     [1] = {x = -10, y = -10},
     [2] = {x = -10, y = 10},
