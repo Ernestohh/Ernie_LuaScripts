@@ -90,15 +90,21 @@ function KerapacHardMode:HandlePhase4()
         Logger:Info(#southEcho .. " South")
         printed = true
     end
-
-    if northEcho[1].Anim == 33493 then
+    if northEcho ~= nil and not State.isNorthEchoDead then
+        if northEcho[1].Anim == 33493 then
         State.isNorthEchoDead = true
+        end
     end
-    if westEcho[1].Anim == 33493 then
+    if westEcho ~= nil and not State.isWestEchoDead then
+        if westEcho[1].Anim == 33493 then
         State.isWestEchoDead = true
+        end
     end
-    if southEcho[1].Anim == 33493 then
+    
+    if southEcho ~= nil and not State.isSouthEchoDead then
+        if southEcho[1].Anim == 33493 then
         State.isSouthEchoDead = true
+        end
     end
 
     if targetInfo.Target_Name ~= "Echo of Kerapac" then
