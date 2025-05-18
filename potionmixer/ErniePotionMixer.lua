@@ -522,14 +522,31 @@ function PotionMixer:handleInitializing()
         print("\n=== READY TO CRAFT ===")
         print("Preset has been set up for current level potions. Loading preset...")
         
-        if API.FindNPCbyName("Banker", 10) ~= nil then
+        if API.FindNPCbyName("Banker", 10).Id ~= 0 then
             Interact:NPC("Banker", "Load Last Preset from", 10)
-            self:sleepWithRandomVariation(3)
-        elseif API.GetAllObjArray1({125115}, 10, {0}) ~= nil then
+        elseif #API.GetAllObjArray1({125115}, 10, {0}) > 0 then
             Interact:Object("Bank chest", "Load Last Preset from", 10)
-            self:sleepWithRandomVariation(3)
+        end
+        
+        local attempts = 0
+        local maxAttempts = 50
+        local ingredientsLoaded = false
+        local firstIngredientId = self.selectedPotionIngredientIds[1]
+        local secondIngredientId = self.selectedPotionIngredientIds[2]
+        
+        repeat
+            API.RandomSleep2(100, 200, 300)
+            if Inventory:Contains({firstIngredientId}) and Inventory:Contains({secondIngredientId}) then
+                ingredientsLoaded = true
+            end
+            attempts = attempts + 1
+        until ingredientsLoaded or attempts >= maxAttempts
+        
+        if ingredientsLoaded then
+            self.currentState = self.States.IDLE
         else
-            print("WARNING: No banker or bank chest found!")
+            print("WARNING: Failed to load ingredients, going to error state")
+            self.currentState = self.States.ERROR
         end
         
         print("You can now start crafting!")
@@ -552,7 +569,7 @@ function PotionMixer:handleIdle()
         
         if (Inventory:Contains({firstIngredientId}) and Inventory:Contains({secondIngredientId})) then
             print("Mixing")
-            if API.GetAllObjArray1({89770}, 10, {0}) ~= nil then
+            if #API.GetAllObjArray1({89770}, 10, {0}) > 0 then
                 Interact:Object("Portable well", "Mix Potions", 10)
                 self.currentState = self.States.MIXING
                 local attempts = 0
@@ -571,15 +588,16 @@ function PotionMixer:handleIdle()
                 until interfaceReady or attempts >= maxAttempts
                 
                 if attempts >= maxAttempts then
-                    print("WARNING: Mixing interface did not show " .. self.selectedPotionName .. " within timeout, proceeding anyway...")
+                    print("WARNING: Mixing interface did not show " .. self.selectedPotionName .. " within timeout, stopping script")
+                    API.Write_LoopyLoop(false)
                 end
                 
                 self.amountOfPotionsToMake = API.VB_FindPSett(8847).state
                 API.DoAction_Interface(0xffffffff,0xffffffff,0,1370,30,-1,API.OFF_ACT_GeneralInterface_Choose_option)
                 self:sleepWithRandomVariation(1)
             else
-                print("No Portable well found. Stopping script")
-                self.currentState = self.States.ERROR
+                print("No Portable well found, stopping script")
+                API.Write_LoopyLoop(false)
             end
         else
             print("[DEBUG IDLE] Missing ingredients - staying in IDLE")
@@ -599,16 +617,15 @@ function PotionMixer:handleMixing()
         self.currentState = self.States.BANKING
     end
 end
-
 function PotionMixer:handleBanking()
     local improvedPotion = self:checkForLevelUpAndBetterPotions()
     if improvedPotion then
         self.currentState = self.States.UPGRADING
         self.upgradePotion = improvedPotion
     else
-        if API.FindNPCbyName("Banker", 10) ~= nil then
+        if API.FindNPCbyName("Banker", 10).Id ~= 0 then
             Interact:NPC("Banker", "Load Last Preset from", 10)
-        elseif API.GetAllObjArray1({125115}, 10, {0}) ~= nil then
+        elseif #API.GetAllObjArray1({125115}, 10, {0}) > 0 then
             Interact:Object("Bank chest", "Load Last Preset from", 10)
         end
         
