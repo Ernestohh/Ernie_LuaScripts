@@ -19,6 +19,7 @@ PotionMixer.selectedPotionName = ""
 PotionMixer.isPresetCreated = false
 PotionMixer.cachedBankItems = {}
 PotionMixer.amountOfPotionsToMake = 0
+PotionMixer.isMixing = false
 
 PotionMixer.Data = {
     version = "1.1",
@@ -616,42 +617,51 @@ function PotionMixer:handleInitializing()
 end
 
 function PotionMixer:handleIdle()
-    if #self.selectedPotionIngredientIds > 0 then
+    if #self.selectedPotionIngredientIds > 0  and not self.isMixing then
         print("[DEBUG IDLE] Checking for " .. #self.selectedPotionIngredientIds .. " ingredients:")
         for i = 1, #self.selectedPotionIngredientIds do
             print("[DEBUG IDLE] Has ingredient " .. i .. " (ID: " .. self.selectedPotionIngredientIds[i] .. "): " .. tostring(Inventory:Contains({self.selectedPotionIngredientIds[i]})))
         end
         
         if self:hasAllIngredients() then
-            print("Mixing")
-            if #API.GetAllObjArray1({89770}, 10, {0}) > 0 then
-                Interact:Object("Portable well", "Mix Potions", 10)
-                self.currentState = self.States.MIXING
-                local attempts = 0
-                local maxAttempts = 50
-                local interfaceReady = false
-                repeat
-                    self:sleepWithRandomVariation(0)
-                    local interfaceElements = API.ScanForInterfaceTest2Get(false, { { 1370,0,-1,0 }, { 1370,2,-1,0 }, { 1370,4,-1,0 }, { 1370,5,-1,0 }, { 1370,13,-1,0 } })
-                    for i = 1, #interfaceElements do
-                        if interfaceElements[i].textids == self.selectedPotionName then
-                            interfaceReady = true
-                            break
+            if not self.isMixing then
+                print("Mixing")
+                if #API.GetAllObjArray1({89770}, 10, {0}) > 0 then
+                    Interact:Object("Portable well", "Mix Potions", 10)
+                    self.currentState = self.States.MIXING
+                    local attempts = 0
+                    local maxAttempts = 10
+                    local interfaceReady = false
+                    repeat
+                        self:sleepWithRandomVariation(0)
+                        local interfaceElements = API.ScanForInterfaceTest2Get(false, { { 1370,0,-1,0 }, { 1370,2,-1,0 }, { 1370,4,-1,0 }, { 1370,5,-1,0 }, { 1370,13,-1,0 } })
+                        for i = 1, #interfaceElements do
+                            local cleanTextids = interfaceElements[i].textids
+                            if cleanTextids then
+                                cleanTextids = string.gsub(cleanTextids, "<br>", "")
+                                if cleanTextids == self.selectedPotionName then
+                                    print("[DEBUG] Found match! Setting interfaceReady = true")
+                                    interfaceReady = true
+                                    break
+                                end
+                            end
                         end
+                        print("[DEBUG] End of attempt " .. attempts .. ", interfaceReady = " .. tostring(interfaceReady))
+                        attempts = attempts + 1
+                    until interfaceReady or attempts >= maxAttempts
+
+                    if attempts >= maxAttempts then
+                        print("WARNING: Mixing interface did not show " .. self.selectedPotionName .. " within timeout, stopping script")
+                        API.Write_LoopyLoop(false)
                     end
-                    attempts = attempts + 1
-                until interfaceReady or attempts >= maxAttempts
-                
-                if attempts >= maxAttempts then
-                    print("WARNING: Mixing interface did not show " .. self.selectedPotionName .. " within timeout, proceeding anyway...")
+
+                    self.amountOfPotionsToMake = API.VB_FindPSett(8847).state
+                    API.DoAction_Interface(0xffffffff,0xffffffff,0,1370,30,-1,API.OFF_ACT_GeneralInterface_Choose_option)
+                    self:sleepWithRandomVariation(1)
+                else
+                    print("No Portable well found. Stopping script")
+                    self.currentState = self.States.ERROR
                 end
-                
-                self.amountOfPotionsToMake = API.VB_FindPSett(8847).state
-                API.DoAction_Interface(0xffffffff,0xffffffff,0,1370,30,-1,API.OFF_ACT_GeneralInterface_Choose_option)
-                self:sleepWithRandomVariation(1)
-            else
-                print("No Portable well found. Stopping script")
-                self.currentState = self.States.ERROR
             end
         else
             print("[DEBUG IDLE] Missing ingredients - staying in IDLE")
@@ -678,6 +688,10 @@ function PotionMixer:handleBanking()
         self.currentState = self.States.UPGRADING
         self.upgradePotion = improvedPotion
     else
+        self.isMixing = false
+        if Inventor:Contains({24154}) then
+            API.DoAction_Inventory1(24154, 0, 8, API.OFF_ACT_GeneralInterface_route2)
+        end
         if API.FindNPCbyName("Banker", 10).Id ~= 0 then
             Interact:NPC("Banker", "Load Last Preset from", 10)
         elseif #API.GetAllObjArray1({125115}, 10, {0}) > 0 then
