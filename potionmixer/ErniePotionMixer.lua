@@ -14,14 +14,14 @@ PotionMixer.States = {
 }
 
 PotionMixer.currentState = PotionMixer.States.INITIALIZING
-PotionMixer.selectedPotionIngredientIds = {0, 0}
+PotionMixer.selectedPotionIngredientIds = {}
 PotionMixer.selectedPotionName = ""
 PotionMixer.isPresetCreated = false
 PotionMixer.cachedBankItems = {}
 PotionMixer.amountOfPotionsToMake = 0
 
 PotionMixer.Data = {
-    version = "1.0",
+    version = "1.1",
     sessionXpGained = 0,
     totalPotionsMixed = 0,
     presetChanges = 0,
@@ -267,7 +267,7 @@ function PotionMixer:checkForLevelUpAndBetterPotions()
     print("[DEBUG shouldUpdatePotion] Using stored bank items (" .. #self.cachedBankItems .. " items)")
     
     print("[DEBUG shouldUpdatePotion] Current level: " .. currentLevel)
-    print("[DEBUG shouldUpdatePotion] Current potion ingredients: " .. self.selectedPotionIngredientIds[1] .. ", " .. self.selectedPotionIngredientIds[2])
+    print("[DEBUG shouldUpdatePotion] Current potion ingredients: " .. #self.selectedPotionIngredientIds .. " items")
     
     local newCraftablePotions = self:getAllCraftablePotions(self.cachedBankItems, currentLevel)
     print("[DEBUG shouldUpdatePotion] Found " .. #newCraftablePotions .. " craftable potions")
@@ -288,12 +288,24 @@ function PotionMixer:checkForLevelUpAndBetterPotions()
     end
     
     if bestAvailablePotion and (#bestAvailablePotion.craft_items >= 2) then
-        local newFirstIngredientId = bestAvailablePotion.craft_items[1].id
-        local newSecondIngredientId = bestAvailablePotion.craft_items[2].id
+        local newIngredientIds = {}
+        for i = 1, #bestAvailablePotion.craft_items do
+            table.insert(newIngredientIds, bestAvailablePotion.craft_items[i].id)
+        end
         
-        print("[DEBUG shouldUpdatePotion] New ingredients would be: " .. newFirstIngredientId .. ", " .. newSecondIngredientId)
+        local ingredientsDifferent = false
+        if #newIngredientIds ~= #self.selectedPotionIngredientIds then
+            ingredientsDifferent = true
+        else
+            for i = 1, #newIngredientIds do
+                if newIngredientIds[i] ~= self.selectedPotionIngredientIds[i] then
+                    ingredientsDifferent = true
+                    break
+                end
+            end
+        end
         
-        if (newFirstIngredientId ~= self.selectedPotionIngredientIds[1] or newSecondIngredientId ~= self.selectedPotionIngredientIds[2]) then
+        if ingredientsDifferent then
             print("[DEBUG shouldUpdatePotion] Ingredients are different, checking if better...")
             
             local currentBestLevelRequirement = 0
@@ -328,16 +340,37 @@ end
 function PotionMixer:ensureBankIsOpen()
     if not bankInterface:IsOpen() then
         bankInterface:Open()
-        self:sleepWithRandomVariation(1)
+        API.RandomSleep2(2000,2000,3000)
     end
 end
 
-function PotionMixer:configureBankPresetWithIngredients(firstIngredientId, secondIngredientId)
+function PotionMixer:hasAllIngredients()
+    if #self.selectedPotionIngredientIds == 0 then
+        return false
+    end
+    
+    for i = 1, #self.selectedPotionIngredientIds do
+        if not Inventory:Contains({self.selectedPotionIngredientIds[i]}) then
+            return false
+        end
+    end
+    return true
+end
+
+function PotionMixer:configureBankPresetWithIngredients(potionDefinition)
     self:ensureBankIsOpen()
     bankInterface:DepositInventory()
     bankInterface:SetQuantity("X")
-    bankInterface:SetXQuantity(14)
-    bankInterface:Withdraw({firstIngredientId, secondIngredientId})
+    
+    local quantityPerIngredient = math.floor(28 / #potionDefinition.craft_items)
+    bankInterface:SetXQuantity(quantityPerIngredient)
+    
+    local ingredientIds = {}
+    for i = 1, #potionDefinition.craft_items do
+        table.insert(ingredientIds, potionDefinition.craft_items[i].id)
+    end
+    
+    bankInterface:Withdraw(ingredientIds)
     self:sleepWithRandomVariation(1)
     bankInterface:SavePreset(1)
 end
@@ -348,10 +381,7 @@ function PotionMixer:createBankPresetForPotion(potionDefinition, reasonForCreati
         return false
     end
     
-    local firstIngredientId = potionDefinition.craft_items[1].id
-    local secondIngredientId = potionDefinition.craft_items[2].id
-    
-    if self.selectedPotionIngredientIds[1] == firstIngredientId and self.selectedPotionIngredientIds[2] == secondIngredientId and self.isPresetCreated then
+    if self.selectedPotionName == potionDefinition.name and self.isPresetCreated then
         print("Preset already configured for " .. potionDefinition.name .. " - no changes needed")
         return true
     end
@@ -359,16 +389,26 @@ function PotionMixer:createBankPresetForPotion(potionDefinition, reasonForCreati
     print("\n=== CREATING PRESET ===")
     print("Reason: " .. reasonForCreation)
     print("Potion: " .. potionDefinition.name)
-    print("Ingredients: " .. potionDefinition.craft_items[1].name .. " + " .. potionDefinition.craft_items[2].name)
+    print("Ingredients: " .. #potionDefinition.craft_items .. " items")
+    for i = 1, #potionDefinition.craft_items do
+        print("  - " .. potionDefinition.craft_items[i].name)
+    end
     
-    self:configureBankPresetWithIngredients(firstIngredientId, secondIngredientId)
+    self:configureBankPresetWithIngredients(potionDefinition)
     
-    self.selectedPotionIngredientIds = {firstIngredientId, secondIngredientId}
+    self.selectedPotionIngredientIds = {}
+    for i = 1, #potionDefinition.craft_items do
+        table.insert(self.selectedPotionIngredientIds, potionDefinition.craft_items[i].id)
+    end
     self.selectedPotionName = potionDefinition.name
     self.isPresetCreated = true
     
     print("V Preset created successfully!")
-    print("V Auto-mixing configured for: " .. potionDefinition.craft_items[1].name .. " + " .. potionDefinition.craft_items[2].name)
+    local ingredientNames = {}
+    for i = 1, #potionDefinition.craft_items do
+        table.insert(ingredientNames, potionDefinition.craft_items[i].name)
+    end
+    print("V Auto-mixing configured for: " .. table.concat(ingredientNames, " + "))
     return true
 end
 
@@ -523,7 +563,10 @@ function PotionMixer:handleInitializing()
     
     local presetCreationSuccess = self:setupOptimalPotionPreset()
     
-    if presetCreationSuccess then
+    if presetCreationSuccess == nil then
+        print("\n=== SCRIPT STOPPED ===")
+        print("No valid potions to craft. Exiting...")
+    elseif presetCreationSuccess then
         print("\n=== READY TO CRAFT ===")
         print("Preset has been set up for current level potions. Loading preset...")
         
@@ -531,48 +574,55 @@ function PotionMixer:handleInitializing()
             Interact:NPC("Banker", "Load Last Preset from", 10)
         elseif #API.GetAllObjArray1({125115}, 10, {0}) > 0 then
             Interact:Object("Bank chest", "Load Last Preset from", 10)
+        else
+            print("WARNING: No banker or bank chest found!")
         end
         
         local attempts = 0
         local maxAttempts = 50
         local ingredientsLoaded = false
-        local firstIngredientId = self.selectedPotionIngredientIds[1]
-        local secondIngredientId = self.selectedPotionIngredientIds[2]
-        
         repeat
-            API.RandomSleep2(100, 200, 300)
-            if Inventory:Contains({firstIngredientId}) and Inventory:Contains({secondIngredientId}) then
+            self:sleepWithRandomVariation(0)
+            print("[DEBUG] Attempt " .. attempts .. "/" .. maxAttempts)
+            print("[DEBUG] selectedPotionIngredientIds count: " .. #self.selectedPotionIngredientIds)
+            if #self.selectedPotionIngredientIds > 0 then
+                for i = 1, #self.selectedPotionIngredientIds do
+                    print("[DEBUG] Looking for ingredient " .. i .. " (ID: " .. self.selectedPotionIngredientIds[i] .. "): " .. tostring(Inventory:Contains({self.selectedPotionIngredientIds[i]})))
+                end
+            end
+            
+            if self:hasAllIngredients() then
                 ingredientsLoaded = true
             end
             attempts = attempts + 1
         until ingredientsLoaded or attempts >= maxAttempts
         
         if ingredientsLoaded then
+            print("V Ingredients loaded successfully!")
+            print("You can now start crafting!")
             self.currentState = self.States.IDLE
+            print("[DEBUG] State changed to: " .. self.currentState)
+            return
         else
-            print("WARNING: Failed to load ingredients, going to error state")
-            self.currentState = self.States.ERROR
+            print("WARNING: Preset did not load ingredients within timeout!")
+            return
         end
-        
-        print("You can now start crafting!")
-        self.currentState = self.States.IDLE
     else
         print("\n=== NO ACTION TAKEN ===")
         print("Unable to create a preset at this time.")
         self.currentState = self.States.ERROR
+        return
     end
 end
 
 function PotionMixer:handleIdle()
-    if self.selectedPotionIngredientIds[1] ~= 0 and self.selectedPotionIngredientIds[2] ~= 0 then
-        local firstIngredientId = self.selectedPotionIngredientIds[1]
-        local secondIngredientId = self.selectedPotionIngredientIds[2]
+    if #self.selectedPotionIngredientIds > 0 then
+        print("[DEBUG IDLE] Checking for " .. #self.selectedPotionIngredientIds .. " ingredients:")
+        for i = 1, #self.selectedPotionIngredientIds do
+            print("[DEBUG IDLE] Has ingredient " .. i .. " (ID: " .. self.selectedPotionIngredientIds[i] .. "): " .. tostring(Inventory:Contains({self.selectedPotionIngredientIds[i]})))
+        end
         
-        print("[DEBUG IDLE] Checking for ingredients: " .. firstIngredientId .. " and " .. secondIngredientId)
-        print("[DEBUG IDLE] Has ingredient 1: " .. tostring(Inventory:Contains({firstIngredientId})))
-        print("[DEBUG IDLE] Has ingredient 2: " .. tostring(Inventory:Contains({secondIngredientId})))
-        
-        if (Inventory:Contains({firstIngredientId}) and Inventory:Contains({secondIngredientId})) then
+        if self:hasAllIngredients() then
             print("Mixing")
             if #API.GetAllObjArray1({89770}, 10, {0}) > 0 then
                 Interact:Object("Portable well", "Mix Potions", 10)
@@ -581,7 +631,7 @@ function PotionMixer:handleIdle()
                 local maxAttempts = 50
                 local interfaceReady = false
                 repeat
-                    API.RandomSleep2(100, 200, 300)
+                    self:sleepWithRandomVariation(0)
                     local interfaceElements = API.ScanForInterfaceTest2Get(false, { { 1370,0,-1,0 }, { 1370,2,-1,0 }, { 1370,4,-1,0 }, { 1370,5,-1,0 }, { 1370,13,-1,0 } })
                     for i = 1, #interfaceElements do
                         if interfaceElements[i].textids == self.selectedPotionName then
@@ -593,16 +643,15 @@ function PotionMixer:handleIdle()
                 until interfaceReady or attempts >= maxAttempts
                 
                 if attempts >= maxAttempts then
-                    print("WARNING: Mixing interface did not show " .. self.selectedPotionName .. " within timeout, stopping script")
-                    API.Write_LoopyLoop(false)
+                    print("WARNING: Mixing interface did not show " .. self.selectedPotionName .. " within timeout, proceeding anyway...")
                 end
                 
                 self.amountOfPotionsToMake = API.VB_FindPSett(8847).state
                 API.DoAction_Interface(0xffffffff,0xffffffff,0,1370,30,-1,API.OFF_ACT_GeneralInterface_Choose_option)
                 self:sleepWithRandomVariation(1)
             else
-                print("No Portable well found, stopping script")
-                API.Write_LoopyLoop(false)
+                print("No Portable well found. Stopping script")
+                self.currentState = self.States.ERROR
             end
         else
             print("[DEBUG IDLE] Missing ingredients - staying in IDLE")
@@ -622,6 +671,7 @@ function PotionMixer:handleMixing()
         self.currentState = self.States.BANKING
     end
 end
+
 function PotionMixer:handleBanking()
     local improvedPotion = self:checkForLevelUpAndBetterPotions()
     if improvedPotion then
@@ -637,12 +687,17 @@ function PotionMixer:handleBanking()
         local attempts = 0
         local maxAttempts = 50
         local ingredientsLoaded = false
-        local firstIngredientId = self.selectedPotionIngredientIds[1]
-        local secondIngredientId = self.selectedPotionIngredientIds[2]
-        
         repeat
-            API.RandomSleep2(100, 200, 300)
-            if Inventory:Contains({firstIngredientId}) and Inventory:Contains({secondIngredientId}) then
+            self:sleepWithRandomVariation(0)
+            print("[DEBUG] Attempt " .. attempts .. "/" .. maxAttempts)
+            print("[DEBUG] selectedPotionIngredientIds count: " .. #self.selectedPotionIngredientIds)
+            if #self.selectedPotionIngredientIds > 0 then
+                for i = 1, #self.selectedPotionIngredientIds do
+                    print("[DEBUG] Looking for ingredient " .. i .. " (ID: " .. self.selectedPotionIngredientIds[i] .. "): " .. tostring(Inventory:Contains({self.selectedPotionIngredientIds[i]})))
+                end
+            end
+            
+            if self:hasAllIngredients() then
                 ingredientsLoaded = true
             end
             attempts = attempts + 1
@@ -650,11 +705,13 @@ function PotionMixer:handleBanking()
         
         if ingredientsLoaded then
             self.currentState = self.States.IDLE
+            return
         else
             print("\n=== OUT OF INGREDIENTS ===")
             print("Failed to load preset - likely ran out of ingredients!")
             print("Restarting one more time!")
             self.currentState = self.States.ERROR 
+            return
         end
     end
 end
@@ -666,12 +723,18 @@ function PotionMixer:handleUpgrading()
     local presetCreationSuccess = self:createBankPresetForPotion(self.upgradePotion, "Level up - better potion available")
     if presetCreationSuccess then
         print("V Successfully updated to better potion: " .. self.upgradePotion.name)
-        print("V New preset created with ingredients: " .. self.upgradePotion.craft_items[1].name .. " + " .. self.upgradePotion.craft_items[2].name)
+        local ingredientNames = {}
+        for i = 1, #self.upgradePotion.craft_items do
+            table.insert(ingredientNames, self.upgradePotion.craft_items[i].name)
+        end
+        print("V New preset created with ingredients: " .. table.concat(ingredientNames, " + "))
         self.Data.presetChanges = self.Data.presetChanges + 1
         self.currentState = self.States.IDLE
+        return
     else
         print("X Failed to create new preset")
         self.currentState = self.States.ERROR
+        return
     end
     self.upgradePotion = nil
 end
@@ -680,6 +743,7 @@ function PotionMixer:handleError()
     print("Error state - attempting to reinitialize...")
     self:sleepWithRandomVariation(5)
     self.currentState = self.States.INITIALIZING
+    return
 end
 
 function PotionMixer:executeStateMachine()
