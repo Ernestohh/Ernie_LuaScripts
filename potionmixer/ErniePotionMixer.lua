@@ -424,9 +424,14 @@ function PotionMixer:setupOptimalPotionPreset()
     if optimalPotion then
         return self:createBankPresetForPotion(optimalPotion, "Best available potion at current level")
     else
+        print("\n=== NO CRAFTABLE POTIONS FOUND ===")
         print("No potions can be made at your current level!")
-        print("Check if you have the required ingredients in your bank.")
-        return false
+        print("This could be because:")
+        print("  - Missing required ingredients in bank")
+        print("  - All available potions require higher Herblore level")
+        print("  - Potions only have 1 ingredient (need 2+ for presets)")
+        print("Check your bank and Herblore level, then restart the script.")
+        API.Write_LoopyLoop(false)
     end
 end
 
@@ -646,8 +651,10 @@ function PotionMixer:handleBanking()
         if ingredientsLoaded then
             self.currentState = self.States.IDLE
         else
-            print("WARNING: Failed to load ingredients, going to error state")
-            self.currentState = self.States.ERROR
+            print("\n=== OUT OF INGREDIENTS ===")
+            print("Failed to load preset - likely ran out of ingredients!")
+            print("Restarting one more time!")
+            self.currentState = self.States.ERROR 
         end
     end
 end
