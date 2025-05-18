@@ -689,7 +689,7 @@ function PotionMixer:handleBanking()
         self.upgradePotion = improvedPotion
     else
         self.isMixing = false
-        if Inventor:Contains({24154}) then
+        if Inventory:Contains({24154}) then
             API.DoAction_Inventory1(24154, 0, 8, API.OFF_ACT_GeneralInterface_route2)
         end
         if API.FindNPCbyName("Banker", 10).Id ~= 0 then
