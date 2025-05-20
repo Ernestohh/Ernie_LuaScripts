@@ -120,7 +120,7 @@ local KerapacState = {
     sortedPassiveKeys = {}
 }
 
-KerapacState.selectedPrayerType = API.VB_FindPSettinOrder(3277, 0).state & 1
+KerapacState.selectedPrayerType = API.VB_FindPSett(12219).state
 
 for key in pairs(Data.passiveBuffs) do
     table.insert(KerapacState.sortedPassiveKeys, key)
