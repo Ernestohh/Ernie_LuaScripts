@@ -83,7 +83,7 @@ function KerapacPreparation:PrepareForBattle()
 end
 
 function KerapacPreparation:HandleAdrenalineCrystal()
-    if State.isMaxAdrenaline or not State.adrenCheckbox.box_ticked then return end
+    if State.isMaxAdrenaline or not State.adrenCheckbox.box_ticked then State.isMaxAdrenaline = true return end
     
     if API.GetAddreline_() ~= 100 then
         Interact:Object("Adrenaline crystal", "Channel", 60)
