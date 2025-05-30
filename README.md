@@ -9,7 +9,10 @@
 
 ## Getting Started
 
-The Script Manager is your central hub for running and managing Lua scripts in MemoryError. As a script developer, you'll create automated scripts that interact with the game using the provided API.
+The Script Manager can be used to create more complex scripts that require more user info. It can also be used to download from github without having to setup move around files.
+![ScriptsButton](./images/ScriptsButton.png)
+![ScriptManagerWindow](./images/ScriptManagerWindow.png)
+![ScriptGithubRemoteDownload](./images/ScriptGithubRemoteDownload.png)
 
 ### Where to Place Your Scripts
 
@@ -38,7 +41,7 @@ while (API.Read_LoopyLoop()) do
 end
 ```
 
-Scripts without this loop pattern are considered helper modules and won't appear in the UI.
+Scripts without this loop pattern are considered helper modules and won't appear in the Script Manager.
 
 ### Script with Metadata
 
@@ -99,6 +102,7 @@ while (API.Read_LoopyLoop()) do
     API.RandomSleep2(100, 200, 300)
 end
 ```
+![ScriptDetails](./images/ScriptDetails.png)
 
 ## Configuration System
 
@@ -122,6 +126,7 @@ SM:AddTab("Advanced")                                                           
 SM:NumberInput("Max Runtime (minutes)", "maxRuntime", 180, 1, 999)                  -- Will create a number input named Max Runtime (minutes), is referenced by CONFIG by maxRuntime, is default 180, 
                                                                                     -- min value = 1, max value = 999
 ```
+![ScriptConfigButton](./images/ScriptConfigButton.png)
 
 ### Accessing Configuration in Your Script
 
@@ -177,6 +182,11 @@ SM:Slider("Label", "key", minValue, maxValue, defaultValue)
 -- Create tabs to organize options
 SM:AddTab("Tab Name")
 ```
+
+### Saving Presets of different Configurations
+
+![ScriptConfigPresets](./images/ScriptConfigPresets.png)
+![ScriptConfigSavePreset](./images/ScriptConfigSavePreset.png)
 
 ## Script Organization
 
