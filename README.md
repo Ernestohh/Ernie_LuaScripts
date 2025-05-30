@@ -9,7 +9,7 @@
 
 ## Getting Started
 
-**You can try it out using the test.lua CONFIG_DEBUG in Script Manager)
+**You can try it out using the test.lua CONFIG_DEBUG in Script Manager**
 
 The Script Manager can be used to create more complex scripts that require more user info. It can also be used to download from github without having to setup move around files.
 ![ScriptsButton](./images/ScriptsButton.png)
