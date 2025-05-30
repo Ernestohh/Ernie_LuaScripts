@@ -67,6 +67,14 @@ end
 
 For simple scripts, use a single `.lua` file:
 
+```
+└── Lua_Scripts
+    └── my_boss_killer/
+        ├── main.lua         # Entry point with game loop
+        └── config.lua       # User configuration
+```
+
+
 ### Multi-File Scripts
 
 For complex scripts, organize in folders:
