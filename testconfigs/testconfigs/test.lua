@@ -1,4 +1,3 @@
--- main.lua
 local API = require("api")
 
 -- CONFIG is automatically injected when user has configured the script
