@@ -1,4 +1,3 @@
-# Ernie_LuaScripts
 # Script Manager - How to use
 
 ## Table of Contents
