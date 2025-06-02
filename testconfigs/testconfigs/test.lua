@@ -5,6 +5,7 @@
 -- Category: Debug
 
 local API = require("api")
+--changed
 
 -- CONFIG is automatically injected when user has configured the script
 if CONFIG then
