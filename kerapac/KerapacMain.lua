@@ -83,8 +83,7 @@ while (API.Read_LoopyLoop()) do
                 Combat:HandleCombatState(State:UpdateStateFromAnimation(Combat:GetKerapacAnimation()))
             end
         elseif State.isPlayerDead then
-            Preparation:ReclaimItemsAtGrave() 
-            Preparation:HandleBossReset()
+            Preparation:ReclaimItemsAtGrave()
         elseif State.isTimeToLoot and not State.isLooted and API.Read_LoopyLoop() then
             Loot:HandleLoot()
         elseif State.isLooted and API.Read_LoopyLoop() then
@@ -92,5 +91,6 @@ while (API.Read_LoopyLoop()) do
         end
     end
 end
+
 
 Logger:Info("Stopped Ernie's Kerapac Bosser " .. Data.version)
