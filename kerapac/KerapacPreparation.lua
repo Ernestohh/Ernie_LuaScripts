@@ -258,9 +258,10 @@ function KerapacPreparation:ReclaimItemsAtGrave()
         end 
     end
     if not API.HasDeathItemsReclaim() then
-        Preparation:HandleBossReset()
+        KerapacPreparation:HandleBossReset()
     end
 end
 
 return KerapacPreparation
+
 
