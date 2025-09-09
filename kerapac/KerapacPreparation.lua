@@ -245,8 +245,11 @@ function KerapacPreparation:HandleBossReset()
 end
 
 function KerapacPreparation:ReclaimItemsAtGrave()
+    Utils:SleepTickRandom(10)
     State.hasReclaimedItems = false
-    if API.IsInDeathOffice() and API.HasDeathItemsReclaim() then
+    local foundDeath = false
+    local deathNPC =  API.GetAllObjArray1({27299}, 30, {1})
+    if #deathNPC > 0 then
         Interact:NPC("Death", "Reclaim items", 15)
         Utils:SleepTickRandom(5)
         if API.ScanForInterfaceTest2Get(false, { {1626,57,-1,0}, {1626,59,-1,0}, {1626,12,-1,0}, {1626,13,-1,0}, {1626,23,-1,0}, {1626,24,-1,0}, {1626,30,-1,0}, {1626,31,-1,0}, {1626,33,-1,0}, {1626,8,-1,0}, {1626,10,-1,0}, {1626,10,0,0} })[1].itemid1 ~= 0 then
@@ -255,13 +258,12 @@ function KerapacPreparation:ReclaimItemsAtGrave()
             API.DoAction_Interface(0xffffffff, 0xffffffff, 0, 1626, 72, -1, API.OFF_ACT_GeneralInterface_Choose_option)
             Utils:SleepTickRandom(5)
             Logger:Info("Items reclaimed from grave")
+             KerapacPreparation:HandleBossReset()
         end 
-    end
-    if not API.HasDeathItemsReclaim() then
-        KerapacPreparation:HandleBossReset()
     end
 end
 
 return KerapacPreparation
+
 
 
