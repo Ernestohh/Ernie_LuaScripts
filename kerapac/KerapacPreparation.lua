@@ -245,14 +245,22 @@ function KerapacPreparation:HandleBossReset()
 end
 
 function KerapacPreparation:ReclaimItemsAtGrave()
-    Utils:SleepTickRandom(10)
-    API.DoAction_NPC(0x29, API.OFF_ACT_InteractNPC_route3, { 27299 }, 50)
-    Utils:SleepTickRandom(5)
-    API.DoAction_Interface(0xffffffff, 0xffffffff, 1, 1626, 47, -1, API.OFF_ACT_GeneralInterface_route)
-    Utils:SleepTickRandom(5)
-    API.DoAction_Interface(0xffffffff, 0xffffffff, 0, 1626, 72, -1, API.OFF_ACT_GeneralInterface_Choose_option)
-    Utils:SleepTickRandom(5)
-    Logger:Info("Items reclaimed from grave")
+    State.hasReclaimedItems = false
+    if API.IsInDeathOffice() and API.HasDeathItemsReclaim() then
+        Interact:NPC("Death", "Reclaim items", 15)
+        Utils:SleepTickRandom(5)
+        if API.ScanForInterfaceTest2Get(false, { {1626,57,-1,0}, {1626,59,-1,0}, {1626,12,-1,0}, {1626,13,-1,0}, {1626,23,-1,0}, {1626,24,-1,0}, {1626,30,-1,0}, {1626,31,-1,0}, {1626,33,-1,0}, {1626,8,-1,0}, {1626,10,-1,0}, {1626,10,0,0} })[1].itemid1 ~= 0 then
+            API.DoAction_Interface(0xffffffff, 0xffffffff, 1, 1626, 47, -1, API.OFF_ACT_GeneralInterface_route)
+            Utils:SleepTickRandom(5)
+            API.DoAction_Interface(0xffffffff, 0xffffffff, 0, 1626, 72, -1, API.OFF_ACT_GeneralInterface_Choose_option)
+            Utils:SleepTickRandom(5)
+            Logger:Info("Items reclaimed from grave")
+        end 
+    end
+    if not API.HasDeathItemsReclaim() then
+        Preparation:HandleBossReset()
+    end
 end
 
 return KerapacPreparation
+
