@@ -102,14 +102,14 @@ function KerapacUI:HandleSetupInstance()
     Logger:Info("Setting max players")
     API.DoAction_Interface(0x24, 0xffffffff, 1, 1591, 72, -1, API.OFF_ACT_GeneralInterface_route)
     API.Sleep_tick(2)
-    API.KeyPress_(0x3)
-    API.KeyPress_2(0x0D)
+    API.KeyboardPress(3, 60, 110)
+    API.KeyboardPress2(0x0D, 60, 110)
     
     Logger:Info("Setting min level to 1")
     API.DoAction_Interface(0x24, 0xffffffff, 1, 1591, 81, -1, API.OFF_ACT_GeneralInterface_route)
     API.Sleep_tick(2)
-    API.KeyPress_(0x1)
-    API.KeyPress_2(0x0D)
+    API.KeyboardPress(1, 60, 110)
+    API.KeyboardPress2(0x0D, 60, 110)
     
     Logger:Info("Setting FFA")
     API.DoAction_Interface(0xffffffff, 0xffffffff, 1, 1591, 36, -1, API.OFF_ACT_GeneralInterface_route)
@@ -139,7 +139,7 @@ function KerapacUI:HandleJoinPlayer(partyLeader)
             return 
         end
         
-        API.KeyPress_2("0x"..hex)
+        API.KeyboardPress2("0x"..hex, 60, 110)
     end
     
     if State.isInArena then 
@@ -147,7 +147,7 @@ function KerapacUI:HandleJoinPlayer(partyLeader)
         return 
     end
     
-    API.KeyPress_2(0x0D)
+    API.KeyboardPress2(0x0D, 60, 110)
     API.Sleep_tick(2)
 end
 
@@ -169,5 +169,6 @@ function KerapacUI:HandleStartFight()
     API.DoAction_Interface(0x24, 0xffffffff, 1, 1591, 60, -1, API.OFF_ACT_GeneralInterface_route)
     API.Sleep_tick(3)
 end
+
 
 return KerapacUI
