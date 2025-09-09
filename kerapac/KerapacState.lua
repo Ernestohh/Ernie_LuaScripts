@@ -19,6 +19,7 @@ local KerapacState = {
     islightningPhase = false,
     isAttackingKerapac = false,
     isPlayerDead = false,
+    hasReclaimedItems = true,
     isFightStarted = false,
     isEchoesDead = false,
     isNorthEchoDead = false,
@@ -146,6 +147,7 @@ function KerapacState:Reset()
     self.isMovedToCenter = false
     self.islightningPhase = false
     self.isPlayerDead = false
+    self.hasReclaimedItems = true
     self.isTeamComplete = false
     self.isPhase4SetupComplete = false
     self.isClonesSetup = false
@@ -279,4 +281,5 @@ function KerapacState:CanUseAbilities()
 end
 
 return KerapacState
+
 
