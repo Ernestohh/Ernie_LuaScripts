@@ -1,6 +1,6 @@
 local KerapacData = {}
 
-KerapacData.version = "10.1"
+KerapacData.version = "11.0"
 
 -- User configuration - modify these values
 KerapacData.partyLeader = nil -- replace nil with playername like this "Bob" 
@@ -648,3 +648,4 @@ KerapacData.totalRares = 0
 KerapacData.totalDeaths = 0
 
 return KerapacData
+
