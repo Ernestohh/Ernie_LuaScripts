@@ -1,3 +1,9 @@
+-- Title: Kerapac Bosser
+-- Author: Ernie
+-- Description: Kills Kerapac
+-- Version: 11.0
+-- Category: PvM
+
 local API = require("api")
 local Data = require("kerapac/KerapacData")
 local State = require("kerapac/KerapacState")
@@ -94,3 +100,4 @@ end
 
 
 Logger:Info("Stopped Ernie's Kerapac Bosser " .. Data.version)
+
