@@ -168,6 +168,8 @@ function KerapacState:Reset()
     self.hasTimeWarpBuff = false
     self.hasDodged = false
     self.kerapacPhase = 1
+    self.isScriptureEquipped = false
+    self.hasScriptureBuff = false
     
     Logger:Info("State reset complete")
 end
@@ -277,3 +279,4 @@ function KerapacState:CanUseAbilities()
 end
 
 return KerapacState
+
