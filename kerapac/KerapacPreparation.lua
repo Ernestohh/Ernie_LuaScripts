@@ -570,6 +570,7 @@ end
 
 
 function KerapacPreparation:ReclaimItemsAtGrave()
+    Utils:SleepTickRandom(20)
     State.hasReclaimedItems = false
     local foundDeath = false
     local deathNPC =  API.GetAllObjArray1({27299}, 30, {1})
