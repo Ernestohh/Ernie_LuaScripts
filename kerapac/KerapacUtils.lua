@@ -644,8 +644,8 @@ function KerapacUtils:SetupAutoFire()
     if Familiars:HasFamiliar() and not State.isAutoFireSetup and Familiars:GetName() ~= "Hellhound" then
         API.DoAction_Interface(0xffffffff,0xffffffff,1,662,74,-1,API.OFF_ACT_GeneralInterface_route)
         self:SleepTickRandom(2)
-        API.KeyPress_(0x01)
-        API.KeyPress_2(0x0D)
+        API.KeyboardPress(1, 60, 110)
+        API.KeyboardPress2(0x0D, 60, 110)
         Logger:Info("Setting up auto fire of scrolls")
         State.isAutoFireSetup = true
     else
