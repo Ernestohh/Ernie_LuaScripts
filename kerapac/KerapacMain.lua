@@ -27,15 +27,15 @@ else
     Logger:Error("No configuration found! Please configure the script first.")
     API.Write_LoopyLoop(false)
 end
+if not API.IsCacheLoaded() then
+    Logger:Error("Cache not found at right location. Redownload cache or adjust cache location in settings.json")
+    API.Write_LoopyLoop(false)
+end
 Combat:InitAbilities()
 Utils:handleCombatMode()
 State.startScript = true
 
-while (API.Read_LoopyLoop()) do
-    if State.guiVisible then
-        -- UI removed for config-based approach 
-    end
-    
+while (API.Read_LoopyLoop()) do    
     if State.startScript then
         API.SetDrawLogs(false)
         Utils:TrackingData()
