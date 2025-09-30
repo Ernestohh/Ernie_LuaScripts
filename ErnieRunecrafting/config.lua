@@ -1,5 +1,5 @@
 SM:AddTab("General Settings")
-SM:Dropdown("Rune Type", "runeType", {"air", "water", "earth", "fire", "mind", "body", "nature", "astral", "cosmic", "blood", "chaos", "law", "death", "soul", "time"}, "air")
+SM:Dropdown("Rune Type", "runeType", {"flesh","spirit","bone","miasma","air", "water", "earth", "fire", "mind", "body", "nature", "astral", "cosmic", "blood", "chaos", "law", "death", "soul", "time"}, "air")
 SM:Dropdown("Teleport method", "teleportMethod", {"War's Retreat Teleport","GotE Deep Sea Fishing Hub"}, "War's Retreat Teleport")
 SM:Checkbox("Access to Altar of War?", "hasAccessToAltarOfWar", false)
 SM:Checkbox("Access to Astral altar?", "hasAccessToAstralAltar", false)

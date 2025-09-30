@@ -1,7 +1,7 @@
 -- Title: AutoRunecraft
 -- Author: Ernie
 -- Description: Wildy/Um RC
--- Version: 1.0
+-- Version: 2.0
 -- Category: Skilling
 local API = require("api")
 
@@ -352,24 +352,42 @@ ernieRuneCrafter.stateHandlers[States.CHOOSE_PORTAL_OPTION] = function(erc)
         API.logInfo("Selecting City of Um option...")
         API.DoAction_Interface(0xffffffff, 0xffffffff, 0, 720, 20, -1, API.OFF_ACT_GeneralInterface_Choose_option)
         erc.stateData.choseOption = true
+        erc.stateData.portalCheckTime = os.time()
+        erc.stateData.portalRetries = 0
         sleepTickRandom(2)
     end
 
-    local portal = API.GetAllObjArray1({PORTAL_ID}, 20, {12})
-    if #portal > 0 and API.GetPlayerAnimation_() == -1 then
+    local portal = API.GetAllObjArray1({PORTAL_ID}, 30, {12})
+
+    if #portal > 0 and API.GetPlayerAnimation_(API.GetLocalPlayerName()) == -1 then
         erc:transitionTo(States.ENTER_PORTAL)
+    else
+        local waitTime = os.difftime(os.time(), erc.stateData.portalCheckTime)
+        if waitTime >= 3 then
+            erc.stateData.portalRetries = erc.stateData.portalRetries + 1
+            if erc.stateData.portalRetries >= 5 then
+                API.logError("Portal not found after 5 attempts. Restarting from USE_BRACELET...")
+                erc:transitionTo(States.USE_BRACELET)
+            else
+                API.logInfo("Portal not found, retrying (attempt " .. erc.stateData.portalRetries .. "/5)...")
+                erc.stateData.portalCheckTime = os.time()
+            end
+        end
     end
 end
 
 ernieRuneCrafter.stateHandlers[States.ENTER_PORTAL] = function(erc)
     if not erc.stateData.enteredPortal then
         API.logInfo("Entering dark portal...")
-        Interact:Object("Dark Portal", "Enter", 50)
+        if not API.DoAction_BDive_Tile(WPOINT.new(1164, 1828, 15)) then
+            if not API.DoAction_Dive_Tile(WPOINT.new(1164, 1828, 15)) then
+                API.DoAction_Tile(WPOINT.new(1164, 1828, 15))
+            end 
+        end
         sleepTickRandom(1)
-        API.DoAction_Dive_Tile(WPOINT.new(1164, 1828, 15))
-        Interact:Object("Dark Portal", "Enter", 50)
+        API.DoAction_Object1(0x39,API.OFF_ACT_GeneralObject_route0,{ PORTAL_ID },50);
         erc.stateData.enteredPortal = true
-        sleepTickRandom(2)
+        sleepTickRandom(4)
     end
 
     local altarId = RUNE_ALTAR_IDS[RUNE_TYPE]
@@ -705,22 +723,25 @@ ernieRuneCrafter.stateHandlers[States.APPROACH_ALTAR] = function(erc)
         if IS_WILDERNESS then
             Interact:Object(altarName, "Use", 50)
         else
-            Interact:Object(altarName, "Craft-rune", 50)
+            local altarId = RUNE_ALTAR_IDS[RUNE_TYPE]
+            API.DoAction_Object1(0x29,API.OFF_ACT_GeneralObject_route0,{ altarId },50);
         end
 
         if not IS_WILDERNESS then
             local sleepTicks = 3
-            if RUNE_TYPE == "bone" then
+            if RUNE_TYPE == "bone" or RUNE_TYPE == "spirit" then
                 sleepTicks = 5
             end
             sleepTickRandom(sleepTicks)
 
             if surgeAB and surgeAB.id > 0 then
                 API.DoAction_Ability_Direct(surgeAB, 1, API.OFF_ACT_GeneralInterface_route)
-                sleepTickRandom(1)
+                sleepTickRandom(0)
             end
 
-            Interact:Object(altarName, "Craft-rune", 50)
+            local altarId = RUNE_ALTAR_IDS[RUNE_TYPE]
+            API.DoAction_Object1(0x29,API.OFF_ACT_GeneralObject_route0,{ altarId },50);
+            sleepTickRandom(2)
         end
         updateExpTracking()
         erc.stateData.approachedAltar = true
@@ -743,7 +764,7 @@ ernieRuneCrafter.stateHandlers[States.CRAFT_RUNES] = function(erc)
             erc.stateData.waitedForCrafting = true
         end
 
-        if API.CheckAnim() == -1 and not API.isProcessing() then
+        if API.CheckAnim(5) == -1 and not API.isProcessing() then
             craftingComplete = true
         end
     else
@@ -927,6 +948,7 @@ API.logWarn("=== Ernie's Auto Runecraft Started ===")
 API.logInfo("Rune Type: " .. RUNE_TYPE)
 API.Write_fake_mouse_do(false)
 API.Write_LoopyLoop(true)
+API.SetDrawLogs(true)
 while API.Read_LoopyLoop() do
     idleCheck()
     updateExpTracking()
