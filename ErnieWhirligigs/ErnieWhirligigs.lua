@@ -46,7 +46,7 @@ local stateMachine = {
 
 local function sleepTickRandom(sleepticks)
     API.Sleep_tick(sleepticks)
-    API.RandomSleep2(100, 200, 0)
+    API.RandomSleep2(10, 150, 0)
 end
 
 local function idleCheck()
@@ -269,3 +269,4 @@ end
 API.logWarn("=== Ernie Whirligigs Stopped ===")
 API.logInfo("Total whirligigs caught: " .. stateMachine.whirligigsCaught)
 API.logInfo(formatElapsedTime(stateMachine.startTime))
+
