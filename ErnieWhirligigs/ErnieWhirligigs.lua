@@ -21,7 +21,7 @@ local INCREASED_STACKING = CONFIG.increasedStackingAmount or false
 
 local WHIRLIGIG_IDS = {28711, 28712, 28713, 28714, 28715, 28716, 28717, 28718, 28719, 28720, 28721, 28722, 28723, 28724, 28725, 28726}
 local BUFF_ID = 52770
-local MAX_BUFF_STACKS = toBool(INCREASED_STACKING) and 5 or 4
+local MAX_BUFF_STACKS = toBool(INCREASED_STACKING) and 5 or 3
 
 local States = {
     INIT = "INIT",
@@ -271,3 +271,4 @@ end
 API.logWarn("=== Ernie Whirligigs Stopped ===")
 API.logInfo("Total whirligigs caught: " .. stateMachine.whirligigsCaught)
 API.logInfo(formatElapsedTime(stateMachine.startTime))
+
