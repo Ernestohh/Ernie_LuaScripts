@@ -959,7 +959,11 @@ ernieRuneCrafter.stateHandlers[States.BANKING] = function(erc)
         elseif BANK_CHEST_ID == DEEP_SEA_BANK_CHEST_ID then
             Interact:Object("Rowboat", "Load Last Preset from", 20)
         end
-        
+        if API.DoBankPin(CONFIG.bankPin) then
+            if CONFIG.bankPin == nil then
+                Logger:Error("No Bank Pin provided in configuration")
+            end
+        end
         erc.stateData.banked = true
         sleepTickRandom(4)
     end
