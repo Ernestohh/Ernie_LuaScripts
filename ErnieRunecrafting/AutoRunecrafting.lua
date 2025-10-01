@@ -612,10 +612,10 @@ end
 ernieRuneCrafter.stateHandlers[States.TELEPORT_WITH_MAGE] = function(erc)
     if not erc.stateData.teleportedWithMage then
         API.logInfo("Teleporting with Mage of Zamorak...")
-        if not API.FindNPCbyName("Mage of Zamorak", 50).Action == "Teleport" then
-            Interact:NPC("Mage of Zamorak", "Teleport", 50)
-        else 
+        if API.FindNPCbyName("Mage of Zamorak", 50).Action == "Teleport" then
             Interact:NPC("Mage of Zamorak", "Talk-to", 50)
+        elseif API.FindNPCbyName("Mage of Zamorak", 50).Action == "Talk-to" then
+            Interact:NPC("Mage of Zamorak", "Teleport", 50)
         end
         erc.stateData.teleportedWithMage = true
     end
