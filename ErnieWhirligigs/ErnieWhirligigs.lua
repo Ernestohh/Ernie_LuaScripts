@@ -17,11 +17,10 @@ end
 
 local INITIAL_WHIRLIGIG = CONFIG.initialWhirligig or "Plain whirligig"
 local STACKING_WHIRLIGIG = CONFIG.stackingWhirligig or "Plain whirligig"
-local INCREASED_STACKING = CONFIG.increasedStackingAmount or false
 
 local WHIRLIGIG_IDS = {28711, 28712, 28713, 28714, 28715, 28716, 28717, 28718, 28719, 28720, 28721, 28722, 28723, 28724, 28725, 28726}
 local BUFF_ID = 52770
-local MAX_BUFF_STACKS = toBool(INCREASED_STACKING) and 5 or 3
+local MAX_BUFF_STACKS = API.GetVarbitValue(50818) == 1 and 5 or 3 --Thanks Higgins
 
 local States = {
     INIT = "INIT",
@@ -47,7 +46,7 @@ local stateMachine = {
 
 local function sleepTickRandom(sleepticks)
     API.Sleep_tick(sleepticks)
-    API.RandomSleep2(100, 300, 0)
+    API.RandomSleep2(100, 200, 0)
 end
 
 local function idleCheck()
@@ -236,9 +235,8 @@ stateMachine.stateHandlers[States.CATCH_STACKING] = function(sm)
     local buffCount = getBuffCount()
 
     if buffCount < MAX_BUFF_STACKS then
-        if catchWhirligig(STACKING_WHIRLIGIG) then
-            sleepTickRandom(0)
-        end
+        catchWhirligig(STACKING_WHIRLIGIG)
+        sleepTickRandom(0)
     else
         sm:transitionTo(States.WAIT_BUFF_EXPIRE)
     end
@@ -271,4 +269,3 @@ end
 API.logWarn("=== Ernie Whirligigs Stopped ===")
 API.logInfo("Total whirligigs caught: " .. stateMachine.whirligigsCaught)
 API.logInfo(formatElapsedTime(stateMachine.startTime))
-
