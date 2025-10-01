@@ -6,13 +6,17 @@ if not CONFIG then
     return
 end
 
+local function toBool(value)
+    return value == true or value == "true" or value == 1
+end
+
 local INITIAL_WHIRLIGIG = CONFIG.initialWhirligig or "Plain whirligig"
 local STACKING_WHIRLIGIG = CONFIG.stackingWhirligig or "Plain whirligig"
 local INCREASED_STACKING = CONFIG.increasedStackingAmount or false
 
 local WHIRLIGIG_IDS = {28711, 28712, 28713, 28714, 28715, 28716, 28717, 28718, 28719, 28720, 28721, 28722, 28723, 28724, 28725, 28726}
 local BUFF_ID = 52770
-local MAX_BUFF_STACKS = INCREASED_STACKING and 5 or 4
+local MAX_BUFF_STACKS = toBool(INCREASED_STACKING) and 5 or 4
 
 local States = {
     INIT = "INIT",
@@ -225,8 +229,11 @@ stateMachine.stateHandlers[States.CATCH_STACKING] = function(sm)
     end
 
     local buffCount = getBuffCount()
+
     if buffCount < MAX_BUFF_STACKS then
-        catchWhirligig(STACKING_WHIRLIGIG)
+        if catchWhirligig(STACKING_WHIRLIGIG) then
+            sleepTickRandom(0)
+        end
     else
         sm:transitionTo(States.WAIT_BUFF_EXPIRE)
     end
