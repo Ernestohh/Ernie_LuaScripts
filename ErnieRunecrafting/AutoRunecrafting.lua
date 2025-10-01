@@ -19,7 +19,6 @@ local function toBool(value)
     return value == true or value == "true" or value == 1
 end
 
-
 local RUNE_TYPE = CONFIG.runeType or "air"
 local TELEPORT_METHOD = CONFIG.teleportMethod or "War's Retreat Teleport"
 local MAX_IDLE_TIME_MINUTES = 10
@@ -589,14 +588,14 @@ ernieRuneCrafter.stateHandlers[States.INTERACT_WILDERNESS_WALL] = function(erc)
             erc.stateData.surgedFromWall = true
         else
             local waitTime = os.difftime(os.time(), erc.stateData.wallInteractTime)
-            if waitTime > 8 and not API.ReadPlayerMovin() then
+            if waitTime > 2 and not API.ReadPlayerMovin() then
                 erc.stateData.wallRetries = erc.stateData.wallRetries + 1
-                if erc.stateData.wallRetries >= 3 then
-                    API.logError("Failed to cross wilderness wall after 3 retries. Restarting from USE_WILDERNESS_SWORD...")
+                if erc.stateData.wallRetries >= 8 then
+                    API.logError("Failed to cross wilderness wall after 8 retries. Restarting from USE_WILDERNESS_SWORD...")
                     erc:transitionTo(States.USE_WILDERNESS_SWORD)
                     return
                 else
-                    API.logInfo("Not past wall after 8 seconds, retrying (attempt " .. erc.stateData.wallRetries + 1 .. "/3)...")
+                    API.logInfo("Not past wall after 2 seconds, retrying (attempt " .. erc.stateData.wallRetries + 1 .. "/8)...")
                     erc.stateData.interactedWall = false
                     erc.stateData.wallInteractTime = nil
                 end
@@ -613,7 +612,11 @@ end
 ernieRuneCrafter.stateHandlers[States.TELEPORT_WITH_MAGE] = function(erc)
     if not erc.stateData.teleportedWithMage then
         API.logInfo("Teleporting with Mage of Zamorak...")
-        Interact:NPC("Mage of Zamorak", "Teleport", 50)
+        if not API.FindNPCbyName("Mage of Zamorak", 50).Action == "Teleport" then
+            Interact:NPC("Mage of Zamorak", "Teleport", 50)
+        else 
+            Interact:NPC("Mage of Zamorak", "Talk-to", 50)
+        end
         erc.stateData.teleportedWithMage = true
     end
 
@@ -630,6 +633,8 @@ ernieRuneCrafter.stateHandlers[States.ENTER_RIFT] = function(erc)
         API.logInfo("Entering " .. riftName .. "...")
         Interact:Object(riftName, "Exit-through", 50)
         erc.stateData.enteredRift = true
+        erc.stateData.riftCheckTime = os.time()
+        erc.stateData.riftRetries = 0
         sleepTickRandom(3)
     end
 
@@ -637,6 +642,19 @@ ernieRuneCrafter.stateHandlers[States.ENTER_RIFT] = function(erc)
     local altar = API.GetAllObjArray1({altarId}, 30, {0})
     if #altar > 0 then
         erc:transitionTo(States.APPROACH_ALTAR)
+    else
+        local waitTime = os.difftime(os.time(), erc.stateData.riftCheckTime)
+        if waitTime >= 1 and API.GetPlayerAnimation_(API.GetLocalPlayerName()) == -1 then
+            erc.stateData.riftRetries = erc.stateData.riftRetries + 1
+            if erc.stateData.riftRetries >= 8 then
+                API.logError("Altar not found after 8 attempts. Restarting from TELEPORT_WITH_MAGE...")
+                erc:transitionTo(States.USE_WILDERNESS_SWORD)
+            else
+                API.logInfo("Altar not found, retrying (attempt " .. erc.stateData.riftRetries .. "/8)...")
+                erc.stateData.enteredRift = false
+                erc.stateData.riftCheckTime = os.time()
+            end
+        end
     end
 end
 
@@ -657,6 +675,23 @@ ernieRuneCrafter.stateHandlers[States.APPROACH_ALTAR] = function(erc)
                 sleepTickRandom(5)
             end
 
+            if CONFIG.soulAltarCharges == "1 charge" then
+                sleepTickRandom(2)
+                local chargeText = API.ScanForInterfaceTest2Get(false, {{1251, 8, -1, 0}, {1251, 36, -1, 0}, {1251, 2, -1, 0}, {1251, 7, -1, 0}, {1251, 22, -1, 0}, {1251, 27, -1, 0}})[1].textids
+                if chargeText then
+                    local currentCharges = tonumber(chargeText:match("(%d+)/"))
+                    if currentCharges and currentCharges >= 1 then
+                        API.logInfo("1 charge obtained, cancelling charging process...")
+                        sleepTickRandom(1)
+                        erc.stateData.chargerCharged = true
+                        erc.soulChargerTotalCharges = 100  
+                        erc.stateData.checkedCharges = true
+                        sleepTickRandom(2)
+                        return
+                    end
+                end
+            end
+
             if API.isProcessing() then
                 return
             end
@@ -672,8 +707,16 @@ ernieRuneCrafter.stateHandlers[States.APPROACH_ALTAR] = function(erc)
 
             API.logInfo("Added " .. chargesGained .. " charges. Total charges: " .. erc.soulChargerTotalCharges)
 
-            if erc.soulChargerTotalCharges < 100 then
-                API.logInfo("Soul charger has " .. erc.soulChargerTotalCharges .. " charges, need 100. Returning to bank...")
+            local chargeThreshold = 100
+            if CONFIG.soulAltarCharges == "1 inventory worth of charges" then
+                chargeThreshold = chargesGained
+                API.logInfo("Using 1 inventory threshold: " .. chargeThreshold .. " charges")
+            elseif CONFIG.soulAltarCharges == "1 charge" then
+                chargeThreshold = 1
+            end
+
+            if erc.soulChargerTotalCharges < chargeThreshold then
+                API.logInfo("Soul charger has " .. erc.soulChargerTotalCharges .. " charges, need " .. chargeThreshold .. ". Returning to bank...")
                 erc:transitionTo(States.REFRESH_FAMILIAR)
                 return
             else
@@ -760,11 +803,11 @@ ernieRuneCrafter.stateHandlers[States.CRAFT_RUNES] = function(erc)
 
     if isSoulAltar then
         if not erc.stateData.waitedForCrafting then
-            sleepTickRandom(3)
+            sleepTickRandom(5)
             erc.stateData.waitedForCrafting = true
         end
 
-        if API.CheckAnim(5) == -1 and not API.isProcessing() then
+        if not API.isProcessing() then
             craftingComplete = true
         end
     else
