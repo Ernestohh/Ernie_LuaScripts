@@ -1,3 +1,8 @@
+-- Title: ErnieWhirligigs
+-- Author: Ernie
+-- Description: Catching Whirligigs
+-- Version: 1.0
+-- Category: Skilling
 local API = require("api")
 
 if not CONFIG then
