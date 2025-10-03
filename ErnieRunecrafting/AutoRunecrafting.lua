@@ -102,6 +102,10 @@ local ernieRuneCrafter = {
     currentState = States.INIT,
     previousState = nil,
     runesCrafted = 0,
+    tripCounter = 0,
+    runeBreakdown = {},
+    magicalThreadCrafted = 0,
+    firstBankCompleted = false,
     stateHandlers = {},
     stateData = {},
     lastStateChange = os.time(),
@@ -109,7 +113,10 @@ local ernieRuneCrafter = {
     afkTimer = os.time(),
     startExp = 0,
     currentExp = 0,
-    soulChargerTotalCharges = 0
+    soulChargerTotalCharges = 0,
+    lastExpUpdate = os.time(),
+    cachedExpPerHour = 0,
+    cachedRunesPerHour = 0
 }
 
 local function sleepTickRandom(sleepticks)
@@ -235,27 +242,116 @@ local function updateExpTracking()
 end
 
 local function calculateExpPerHour()
-    local expGained = ernieRuneCrafter.currentExp - ernieRuneCrafter.startExp
+    local currentTime = os.time()
+    local timeSinceUpdate = os.difftime(currentTime, ernieRuneCrafter.lastExpUpdate)
+
+    if timeSinceUpdate >= 5 then
+        local expGained = ernieRuneCrafter.currentExp - ernieRuneCrafter.startExp
+        local timeElapsed = os.difftime(currentTime, ernieRuneCrafter.startTime) / 3600
+
+        if timeElapsed > 0 then
+            ernieRuneCrafter.cachedExpPerHour = math.floor(expGained / timeElapsed)
+        else
+            ernieRuneCrafter.cachedExpPerHour = 0
+        end
+
+        ernieRuneCrafter.lastExpUpdate = currentTime
+    end
+
+    return ernieRuneCrafter.cachedExpPerHour
+end
+
+local function calculateRunesPerHour()
     local timeElapsed = os.difftime(os.time(), ernieRuneCrafter.startTime) / 3600
     if timeElapsed > 0 then
-        return math.floor(expGained / timeElapsed)
+        return math.floor(ernieRuneCrafter.runesCrafted / timeElapsed)
     end
     return 0
 end
 
+local function calculateMagicalThreadPerHour()
+    local timeElapsed = os.difftime(os.time(), ernieRuneCrafter.startTime) / 3600
+    if timeElapsed > 0 then
+        return math.floor(ernieRuneCrafter.magicalThreadCrafted / timeElapsed)
+    end
+    return 0
+end
+
+local function calculateTripsPerHour()
+    local timeElapsed = os.difftime(os.time(), ernieRuneCrafter.startTime) / 3600
+    if timeElapsed > 0 then
+        return math.floor(ernieRuneCrafter.tripCounter / timeElapsed)
+    end
+    return 0
+end
+
+local RUNE_NAMES = {
+    "Air rune", "Water rune", "Earth rune", "Fire rune", "Mind rune", "Body rune",
+    "Cosmic rune", "Chaos rune", "Nature rune", "Law rune", "Death rune",
+    "Astral rune", "Blood rune", "Soul rune", "Time rune",
+    "Miasma rune", "Flesh rune", "Bone rune", "Spirit rune"
+}
+
+local function updateRuneBreakdown()
+    local totalRunes = 0
+    local breakdown = {}
+
+    for _, runeName in ipairs(RUNE_NAMES) do
+        local count = Inventory:InvItemcountStack_Strings(runeName)
+        if count > 0 then
+            breakdown[runeName] = (ernieRuneCrafter.runeBreakdown[runeName] or 0) + count
+            totalRunes = totalRunes + count
+        end
+    end
+
+    if totalRunes > 0 then
+        for runeName, count in pairs(breakdown) do
+            ernieRuneCrafter.runeBreakdown[runeName] = count
+        end
+        ernieRuneCrafter.runesCrafted = 0
+        for _, count in pairs(ernieRuneCrafter.runeBreakdown) do
+            ernieRuneCrafter.runesCrafted = ernieRuneCrafter.runesCrafted + count
+        end
+    end
+
+    local threadCount = Inventory:InvItemcountStack_Strings("Magical thread")
+    if threadCount > 0 then
+        ernieRuneCrafter.magicalThreadCrafted = ernieRuneCrafter.magicalThreadCrafted + threadCount
+    end
+end
+
 local function trackingData()
     local data = {
-        { "Ernie's Auto Runecraft", "Version: 1.0" },
+        { "Ernie's Auto Runecraft", "Version: 2.0" },
         { "-------", "-------" },
         { "Runtime:", API.ScriptRuntimeString() },
-        { "- Rune Type", RUNE_TYPE:gsub("^%l", string.upper) },
-        { "- Runes Crafted", ernieRuneCrafter.runesCrafted },
+        { "- Trips Completed", ernieRuneCrafter.tripCounter },
+        { "- Trips/Hour", calculateTripsPerHour() },
+        { "- Primary Rune Type", (RUNE_TYPE:gsub("^%l", string.upper)) },
         { "- Essence Capacity", essenceCount or "N/A" },
         { "- XP Gained", (ernieRuneCrafter.currentExp - ernieRuneCrafter.startExp) },
         { "- XP/Hour", calculateExpPerHour() },
         { "- Current State", ernieRuneCrafter.currentState },
-        { "-------", "-------" }
+        { "-------", "-------" },
+        { "TOTAL RUNES CRAFTED", ernieRuneCrafter.runesCrafted },
+        { "- Runes/Hour", calculateRunesPerHour() }
     }
+
+    local sortedRunes = {}
+    for runeName, count in pairs(ernieRuneCrafter.runeBreakdown) do
+        table.insert(sortedRunes, {name = runeName, count = count})
+    end
+
+    table.sort(sortedRunes, function(a, b) return a.count > b.count end)
+
+    for _, runeData in ipairs(sortedRunes) do
+        table.insert(data, { "  - " .. runeData.name, runeData.count })
+    end
+
+    table.insert(data, { "-------", "-------" })
+    table.insert(data, { "MAGICAL THREAD", ernieRuneCrafter.magicalThreadCrafted })
+    table.insert(data, { "- Thread/Hour", calculateMagicalThreadPerHour() })
+    table.insert(data, { "-------", "-------" })
 
     API.DrawTable(data)
 end
@@ -362,7 +458,7 @@ ernieRuneCrafter.stateHandlers[States.CHOOSE_PORTAL_OPTION] = function(erc)
         erc:transitionTo(States.ENTER_PORTAL)
     else
         local waitTime = os.difftime(os.time(), erc.stateData.portalCheckTime)
-        if waitTime >= 3 then
+        if waitTime >= 3 and not API.ReadPlayerMovin() then
             erc.stateData.portalRetries = erc.stateData.portalRetries + 1
             if erc.stateData.portalRetries >= 5 then
                 API.logError("Portal not found after 5 attempts. Restarting from USE_BRACELET...")
@@ -644,7 +740,7 @@ ernieRuneCrafter.stateHandlers[States.ENTER_RIFT] = function(erc)
         erc:transitionTo(States.APPROACH_ALTAR)
     else
         local waitTime = os.difftime(os.time(), erc.stateData.riftCheckTime)
-        if waitTime >= 1 and API.GetPlayerAnimation_(API.GetLocalPlayerName()) == -1 then
+        if waitTime >= 1 and not API.ReadPlayerMovin() then
             erc.stateData.riftRetries = erc.stateData.riftRetries + 1
             if erc.stateData.riftRetries >= 8 then
                 API.logError("Altar not found after 8 attempts. Restarting from TELEPORT_WITH_MAGE...")
@@ -815,9 +911,9 @@ ernieRuneCrafter.stateHandlers[States.CRAFT_RUNES] = function(erc)
     end
 
     if craftingComplete then
-        local runeName = RUNE_TYPE:gsub("^%l", string.upper) .. " rune"
-        erc.runesCrafted = erc.runesCrafted + Inventory:InvItemcountStack_Strings(runeName)
+        updateRuneBreakdown()
         updateExpTracking()
+        erc.tripCounter = erc.tripCounter + 1
 
         if isSoulAltar and erc.soulChargerTotalCharges > 0 then
             API.logInfo("Soul runes crafted! Resetting charger charges and runic teleport flag.")
@@ -832,24 +928,28 @@ ernieRuneCrafter.stateHandlers[States.CRAFT_RUNES] = function(erc)
 end
 
 ernieRuneCrafter.stateHandlers[States.REFRESH_FAMILIAR] = function(erc)
-    local buffStatus = API.Buffbar_GetIDstatus(26095)
-    local shouldUsePouch = false
     local hasFamiliarConfigured = toBool(CONFIG.hasAbyssalParasite) or toBool(CONFIG.hasAbyssalLurker) or toBool(CONFIG.hasAbyssalTitan)
 
-    if hasFamiliarConfigured then
-        if buffStatus.found then
-            local timeRemaining = tonumber(buffStatus.conv_text)
-            if timeRemaining and timeRemaining <= 2 then
-                API.logInfo("Summoning familiar buff low (" .. timeRemaining .. " mins), will use pouch...")
+    if not hasFamiliarConfigured then
+        erc:transitionTo(States.TELEPORT_TO_BANK)
+        return
+    end
+
+    local shouldUsePouch = false
+    local buffStatus = API.Buffbar_GetIDstatus(26095)
+
+    if buffStatus.found then
+        local timeRemaining = tonumber(buffStatus.conv_text)
+        if timeRemaining and timeRemaining <= 2 then
+            API.logInfo("Summoning familiar buff low (" .. timeRemaining .. " mins), will use pouch...")
+            shouldUsePouch = true
+        end
+    else
+        for _, pouchId in ipairs(ABYSSAL_POUCH) do
+            if Inventory:Contains(pouchId) then
+                API.logInfo("No Summoning familiar buff found but pouch detected, will refresh familiar...")
                 shouldUsePouch = true
-            end
-        else
-            for _, pouchId in ipairs(ABYSSAL_POUCH) do
-                if Inventory:Contains(pouchId) then
-                    API.logInfo("No Summoning familiar buff found but pouch detected, will refresh familiar...")
-                    shouldUsePouch = true
-                    break
-                end
+                break
             end
         end
     end
@@ -859,80 +959,126 @@ ernieRuneCrafter.stateHandlers[States.REFRESH_FAMILIAR] = function(erc)
         return
     end
 
-    if shouldUsePouch and toBool(CONFIG.hasAccessToAltarOfWar) then
-        if not erc.stateData.teleportedToWars then
-            if not warsTeleportAB then
-                warsTeleportAB = API.GetABs_name1("War's Retreat Teleport")
-            end
+    if not toBool(CONFIG.hasAccessToAltarOfWar) then
+        API.logInfo("Summoning familiar needs refresh but no access to Altar of War. Skipping summoning restoration...")
+        erc:transitionTo(States.TELEPORT_TO_BANK)
+        return
+    end
 
-            if warsTeleportAB and warsTeleportAB.id > 0 then
-                API.logInfo("Teleporting to War's Retreat for Altar of War...")
-                API.DoAction_Ability_Direct(warsTeleportAB, 1, API.OFF_ACT_GeneralInterface_route)
-                erc.stateData.teleportedToWars = true
-                erc.stateData.teleportTime = os.time()
-                erc.stateData.altarRetries = 0
-                sleepTickRandom(2)
-                return
-            else
-                API.logError("War's Retreat Teleport not found! Cannot restore summoning points.")
-                erc.stateData.restoredSummoningPoints = true
-            end
+    local altar = API.GetAllObjArray1({ALTAR_OF_WAR_ID}, 30, {0})
+    if #altar > 0 then
+        API.logInfo("Already at War's Retreat, skipping teleport...")
+        erc.stateData.teleportedToWars = true
+        erc.stateData.teleportTime = os.time()
+        erc.stateData.altarRetries = 0
+    end
+
+    if not erc.stateData.teleportedToWars then
+        warsTeleportAB = API.GetABs_name1("War's Retreat Teleport")
+
+        if warsTeleportAB and warsTeleportAB.id > 0 then
+            API.logInfo("Teleporting to War's Retreat for Altar of War...")
+            API.DoAction_Ability_Direct(warsTeleportAB, 1, API.OFF_ACT_GeneralInterface_route)
+            erc.stateData.teleportedToWars = true
+            erc.stateData.teleportTime = os.time()
+            erc.stateData.altarRetries = 0
+            sleepTickRandom(2)
+            return
+        else
+            API.logError("War's Retreat Teleport not found! Cannot restore summoning points.")
+            erc:transitionTo(States.TELEPORT_TO_BANK)
+            return
         end
+    end
 
-        if erc.stateData.teleportedToWars and not erc.stateData.restoredSummoningPoints then
-            local altar = API.GetAllObjArray1({ALTAR_OF_WAR_ID}, 30, {0})
-            if #altar > 0 then
-                sleepTickRandom(3)
-                API.logInfo("Altar of War found, restoring summoning points...")
-                Interact:Object("Altar of War", "Pray", 30)
-                sleepTickRandom(8)
-                erc.stateData.restoredSummoningPoints = true
-                return
-            else
-                local waitTime = os.difftime(os.time(), erc.stateData.teleportTime)
-                if waitTime > 3 then
-                    erc.stateData.altarRetries = (erc.stateData.altarRetries or 0) + 1
-                    if erc.stateData.altarRetries >= 3 then
-                        API.logError("Altar of War not found after 3 retries. Skipping summoning restoration...")
-                        erc.stateData.restoredSummoningPoints = true
-                    else
-                        API.logInfo("Altar not visible, retrying teleport (attempt " .. erc.stateData.altarRetries + 1 .. "/3)...")
-                        API.DoAction_Ability_Direct(warsTeleportAB, 1, API.OFF_ACT_GeneralInterface_route)
-                        erc.stateData.teleportTime = os.time()
-                        sleepTickRandom(2)
-                    end
-                end
-                return
-            end
-        end
-
-        if erc.stateData.restoredSummoningPoints and not erc.stateData.usedPouch then
-            for _, pouchId in ipairs(ABYSSAL_POUCH) do
-                if Inventory:Contains(pouchId) then
-                    API.logInfo("Using Abyssal Pouch: " .. pouchId)
-                    Inventory:DoAction(pouchId, 1, API.OFF_ACT_GeneralInterface_route)
+    if not erc.stateData.restoredSummoningPoints then
+        local altar = API.GetAllObjArray1({ALTAR_OF_WAR_ID}, 30, {0})
+        if #altar > 0 then
+            sleepTickRandom(3)
+            API.logInfo("Altar of War found, restoring summoning points...")
+            Interact:Object("Altar of War", "Pray", 30)
+            sleepTickRandom(8)
+            erc.stateData.restoredSummoningPoints = true
+            return
+        else
+            local waitTime = os.difftime(os.time(), erc.stateData.teleportTime)
+            if waitTime > 3 and not API.ReadPlayerMovin() then
+                erc.stateData.altarRetries = (erc.stateData.altarRetries or 0) + 1
+                if erc.stateData.altarRetries >= 3 then
+                    API.logError("Altar of War not found after 3 retries. Skipping summoning restoration...")
+                    erc:transitionTo(States.TELEPORT_TO_BANK)
+                    return
+                else
+                    API.logInfo("Altar not visible, retrying teleport (attempt " .. erc.stateData.altarRetries + 1 .. "/3)...")
+                    API.DoAction_Ability_Direct(warsTeleportAB, 1, API.OFF_ACT_GeneralInterface_route)
+                    erc.stateData.teleportTime = os.time()
                     sleepTickRandom(2)
-                    erc.stateData.usedPouch = true
-                    break
                 end
+            end
+            return
+        end
+    end
+
+    if not erc.stateData.usedPouch then
+        for _, pouchId in ipairs(ABYSSAL_POUCH) do
+            if Inventory:Contains(pouchId) then
+                API.logInfo("Using Abyssal Pouch: " .. pouchId)
+                Inventory:DoAction(pouchId, 1, API.OFF_ACT_GeneralInterface_route)
+                sleepTickRandom(2)
+                erc.stateData.usedPouch = true
+                break
             end
         end
 
         if not erc.stateData.usedPouch then
             return
         end
-    elseif shouldUsePouch and not toBool(CONFIG.hasAccessToAltarOfWar) then
-        API.logInfo("Summoning familiar needs refresh but no access to Altar of War. Skipping summoning restoration...")
     end
-    BANK_CHEST_ID = WARS_BANK_CHEST_ID
+
+    if TELEPORT_METHOD == "War's Retreat Teleport" then
+        BANK_CHEST_ID = WARS_BANK_CHEST_ID
+    elseif TELEPORT_METHOD == "GotE Deep Sea Fishing Hub" then
+        BANK_CHEST_ID = DEEP_SEA_BANK_CHEST_ID
+    end
     erc:transitionTo(States.BANKING)
 end
 
 ernieRuneCrafter.stateHandlers[States.TELEPORT_TO_BANK] = function(erc)
+    local hasFamiliarConfigured = toBool(CONFIG.hasAbyssalParasite) or toBool(CONFIG.hasAbyssalLurker) or toBool(CONFIG.hasAbyssalTitan)
+    local useWarsForFirstBank = not erc.firstBankCompleted and hasFamiliarConfigured and TELEPORT_METHOD == "GotE Deep Sea Fishing Hub"
+    local targetBankId = BANK_CHEST_ID
+
+    if useWarsForFirstBank then
+        targetBankId = WARS_BANK_CHEST_ID
+    end
+
+    local bankChest = API.GetAllObjArray1({targetBankId}, 20, {0,12})
+    if #bankChest > 0 then
+        API.logInfo("Already at bank location, skipping teleport...")
+        if useWarsForFirstBank then
+            local originalBankId = BANK_CHEST_ID
+            BANK_CHEST_ID = WARS_BANK_CHEST_ID
+            erc.stateData.restoreBankId = originalBankId
+        end
+        erc:transitionTo(States.BANKING)
+        return
+    end
+
     if not erc.stateData.teleported then
-        if TELEPORT_METHOD == "War's Retreat Teleport" then
-            API.logInfo("Teleporting to War's Retreat...")
-            API.DoAction_Ability_Direct(warsTeleportAB, 1, API.OFF_ACT_GeneralInterface_route)
+        if TELEPORT_METHOD == "War's Retreat Teleport" or useWarsForFirstBank then
+            if useWarsForFirstBank then
+                API.logInfo("First banking with familiar - using War's Retreat...")
+                if not warsTeleportAB then
+                    warsTeleportAB = API.GetABs_name1("War's Retreat Teleport")
+                end
+                API.DoAction_Ability_Direct(warsTeleportAB, 1, API.OFF_ACT_GeneralInterface_route)
+                local originalBankId = BANK_CHEST_ID
+                BANK_CHEST_ID = WARS_BANK_CHEST_ID
+                erc.stateData.restoreBankId = originalBankId
+            else
+                API.logInfo("Teleporting to War's Retreat...")
+                API.DoAction_Ability_Direct(warsTeleportAB, 1, API.OFF_ACT_GeneralInterface_route)
+            end
         elseif TELEPORT_METHOD == "GotE Deep Sea Fishing Hub" then
             API.logInfo("Teleporting to Deep Sea Fishing Hub...")
             if deepSeaTeleportAB.action == "Deep sea fishing hub" then
@@ -945,7 +1091,12 @@ ernieRuneCrafter.stateHandlers[States.TELEPORT_TO_BANK] = function(erc)
         sleepTickRandom(4)
     end
 
-    local bankChest = API.GetAllObjArray1({BANK_CHEST_ID}, 20, {0,12})
+    if TELEPORT_METHOD == "War's Retreat Teleport" then
+        BANK_CHEST_ID = WARS_BANK_CHEST_ID
+    elseif TELEPORT_METHOD == "GotE Deep Sea Fishing Hub" and erc.firstBankCompleted then
+        BANK_CHEST_ID = DEEP_SEA_BANK_CHEST_ID
+    end
+    bankChest = API.GetAllObjArray1({BANK_CHEST_ID}, 20, {0,12})
     if #bankChest > 0 then
         erc:transitionTo(States.BANKING)
     end
@@ -969,6 +1120,19 @@ ernieRuneCrafter.stateHandlers[States.BANKING] = function(erc)
     end
 
     if Inventory:Contains(PURE_ESSENCE_ID) then
+        if not erc.firstBankCompleted then
+            erc.firstBankCompleted = true
+            if erc.stateData.restoreBankId then
+                BANK_CHEST_ID = erc.stateData.restoreBankId
+                erc.stateData.restoreBankId = nil
+            end
+            local hasFamiliarConfigured = toBool(CONFIG.hasAbyssalParasite) or toBool(CONFIG.hasAbyssalLurker) or toBool(CONFIG.hasAbyssalTitan)
+            if hasFamiliarConfigured then
+                erc:transitionTo(States.REFRESH_FAMILIAR)
+                return
+            end
+        end
+
         if IS_WILDERNESS then
             erc:transitionTo(States.CHECK_RUNIC_ATTUNER)
         else
@@ -995,7 +1159,6 @@ API.logWarn("=== Ernie's Auto Runecraft Started ===")
 API.logInfo("Rune Type: " .. RUNE_TYPE)
 API.Write_fake_mouse_do(false)
 API.Write_LoopyLoop(true)
-API.SetDrawLogs(true)
 while API.Read_LoopyLoop() do
     idleCheck()
     updateExpTracking()
