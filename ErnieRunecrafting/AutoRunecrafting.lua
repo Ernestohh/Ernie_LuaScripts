@@ -4,7 +4,6 @@
 -- Version: 3.0
 -- Category: Skilling
 local API = require("api")
-API.SetDrawLogs(true)
 if not CONFIG then
     API.logError("No configuration found! Please configure the script through the Script Manager.")
     API.Write_LoopyLoop(false)
@@ -1425,4 +1424,5 @@ end
 
 API.logWarn("=== Ernie's Auto Runecraft Stopped ===")
 API.logInfo("Total runes crafted: " .. ernieRuneCrafter.runesCrafted)
+
 API.logInfo(formatElapsedTime(ernieRuneCrafter.startTime))
