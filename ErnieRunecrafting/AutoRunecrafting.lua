@@ -1051,8 +1051,6 @@ ernieRuneCrafter.stateHandlers[States.REFRESH_FAMILIAR] = function(erc)
 
     if TELEPORT_METHOD == "War's Retreat Teleport" then
         BANK_CHEST_ID = WARS_BANK_CHEST_ID
-    elseif TELEPORT_METHOD == "GotE Deep Sea Fishing Hub" then
-        BANK_CHEST_ID = DEEP_SEA_BANK_CHEST_ID
     end
     erc:transitionTo(States.BANKING)
 end
