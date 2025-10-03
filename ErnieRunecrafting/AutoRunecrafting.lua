@@ -115,6 +115,7 @@ local ernieRuneCrafter = {
     currentExp = 0,
     soulChargerTotalCharges = 0,
     lastExpUpdate = os.time(),
+    lastExpGained = 0,
     cachedExpPerHour = 0,
     cachedRunesPerHour = 0
 }
@@ -231,12 +232,24 @@ local function updateExpTracking()
     if #xpEvents > 0 then
         for _, event in ipairs(xpEvents) do
             if event.skillIndex == 20 then
-                ernieRuneCrafter.currentExp = event.exp
                 if ernieRuneCrafter.startExp == 0 then
                     ernieRuneCrafter.startExp = event.exp
+                    ernieRuneCrafter.currentExp = event.exp
+                    API.logInfo("Initial Runecrafting XP: " .. event.exp)
+                else
+                    ernieRuneCrafter.currentExp = event.exp
                 end
                 break
             end
+        end
+    end
+
+    if ernieRuneCrafter.startExp == 0 then
+        local currentRcXp = API.GetSkillXP("RUNECRAFTING")
+        if currentRcXp and currentRcXp > 0 then
+            ernieRuneCrafter.startExp = currentRcXp
+            ernieRuneCrafter.currentExp = currentRcXp
+            API.logInfo("Initial Runecrafting XP from skill query: " .. currentRcXp)
         end
     end
 end
@@ -244,9 +257,9 @@ end
 local function calculateExpPerHour()
     local currentTime = os.time()
     local timeSinceUpdate = os.difftime(currentTime, ernieRuneCrafter.lastExpUpdate)
+    local expGained = ernieRuneCrafter.currentExp - ernieRuneCrafter.startExp
 
-    if timeSinceUpdate >= 5 then
-        local expGained = ernieRuneCrafter.currentExp - ernieRuneCrafter.startExp
+    if timeSinceUpdate >= 5 or expGained ~= ernieRuneCrafter.lastExpGained then
         local timeElapsed = os.difftime(currentTime, ernieRuneCrafter.startTime) / 3600
 
         if timeElapsed > 0 then
@@ -256,6 +269,7 @@ local function calculateExpPerHour()
         end
 
         ernieRuneCrafter.lastExpUpdate = currentTime
+        ernieRuneCrafter.lastExpGained = expGained
     end
 
     return ernieRuneCrafter.cachedExpPerHour
