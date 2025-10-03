@@ -1,10 +1,10 @@
 -- Title: AutoRunecraft
 -- Author: Ernie
 -- Description: Wildy/Um RC
--- Version: 2.0
+-- Version: 3.0
 -- Category: Skilling
 local API = require("api")
-
+API.SetDrawLogs(true)
 if not CONFIG then
     API.logError("No configuration found! Please configure the script through the Script Manager.")
     API.Write_LoopyLoop(false)
@@ -106,6 +106,12 @@ local ernieRuneCrafter = {
     runeBreakdown = {},
     magicalThreadCrafted = 0,
     firstBankCompleted = false,
+    checkedStartupFamiliar = false,
+    consumablesUsed = {
+        essence = 0,
+        powerbursts = 0,
+        pouches = 0
+    },
     stateHandlers = {},
     stateData = {},
     lastStateChange = os.time(),
@@ -299,12 +305,211 @@ local function calculateTripsPerHour()
     return 0
 end
 
+local ITEM_IDS = {
+    RUNES = {
+        [554] = "Fire rune",
+        [555] = "Water rune",
+        [556] = "Air rune",
+        [557] = "Earth rune",
+        [558] = "Mind rune",
+        [559] = "Body rune",
+        [560] = "Death rune",
+        [561] = "Nature rune",
+        [562] = "Chaos rune",
+        [563] = "Law rune",
+        [564] = "Cosmic rune",
+        [565] = "Blood rune",
+        [566] = "Soul rune",
+        [9075] = "Astral rune",
+        [58450] = "Time rune",
+        [55337] = "Spirit rune",
+        [55338] = "Bone rune",
+        [55339] = "Flesh rune",
+        [55340] = "Miasma rune"
+    },
+    PRODUCTS = {
+        [47661] = "Magical thread"
+    },
+    CONSUMABLES = {
+        [49063] = "Powerburst of sorcery",
+        [7936] = "Pure essence",
+        [55667] = "Impure essence",
+        [12796] = "Abyssal titan pouch",
+        [12037] = "Abyssal lurker pouch",
+        [12035] = "Abyssal parasite pouch"
+    }
+}
+
+local function getScriptDirectory()
+    local str = debug.getinfo(2, "S").source:sub(2)
+    return str:match("(.*[/\\])")
+end
+
+local PRICE_CACHE_FILE = getScriptDirectory() .. "rc_prices.json"
+local itemPrices = {}
+local pricesLoaded = false
+
+local function getItemPrice(itemId)
+    local price = itemPrices[tostring(itemId)]
+    return price or 0
+end
+
+local function calculateProfit()
+    local revenue = 0
+
+    for runeId, runeName in pairs(ITEM_IDS.RUNES) do
+        local count = ernieRuneCrafter.runeBreakdown[runeName] or 0
+        local price = getItemPrice(runeId)
+        revenue = revenue + (count * price)
+    end
+
+    local threadPrice = getItemPrice(47661)
+    revenue = revenue + (ernieRuneCrafter.magicalThreadCrafted * threadPrice)
+
+    local costs = 0
+
+    local essenceId = IS_WILDERNESS and 7936 or 55667
+    local essencePrice = getItemPrice(essenceId)
+    costs = costs + (ernieRuneCrafter.consumablesUsed.essence * essencePrice)
+
+    local powerburstPrice = getItemPrice(49063)
+    costs = costs + (ernieRuneCrafter.consumablesUsed.powerbursts * (powerburstPrice / 4))
+
+    local pouchPrice = 0
+    if toBool(CONFIG.hasAbyssalTitan) then
+        pouchPrice = getItemPrice(12796)
+    elseif toBool(CONFIG.hasAbyssalLurker) then
+        pouchPrice = getItemPrice(12037)
+    elseif toBool(CONFIG.hasAbyssalParasite) then
+        pouchPrice = getItemPrice(12035)
+    end
+    costs = costs + (ernieRuneCrafter.consumablesUsed.pouches * pouchPrice)
+
+    return revenue - costs
+end
+
+local function calculateProfitPerHour()
+    local timeElapsed = os.difftime(os.time(), ernieRuneCrafter.startTime) / 3600
+    if timeElapsed > 0 then
+        return math.floor(calculateProfit() / timeElapsed)
+    end
+    return 0
+end
+
+local function formatNumber(num)
+    num = math.floor(num)
+
+    if num >= 10000000 then
+        local millions = num / 1000000
+        return string.format("%.1fM", millions)
+    elseif num >= 100000 then
+        local thousands = num / 1000
+        return string.format("%.1fK", thousands)
+    elseif num >= 1000 then
+        local formatted = tostring(num)
+        local k
+        while true do
+            formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", '%1,%2')
+            if k == 0 then break end
+        end
+        return formatted
+    else
+        return tostring(num)
+    end
+end
+
 local RUNE_NAMES = {
     "Air rune", "Water rune", "Earth rune", "Fire rune", "Mind rune", "Body rune",
     "Cosmic rune", "Chaos rune", "Nature rune", "Law rune", "Death rune",
     "Astral rune", "Blood rune", "Soul rune", "Time rune",
     "Miasma rune", "Flesh rune", "Bone rune", "Spirit rune"
 }
+
+local function loadPriceCache()
+    API.logInfo("Attempting to load price cache from: " .. PRICE_CACHE_FILE)
+    local file = io.open(PRICE_CACHE_FILE, "r")
+    if file then
+        local content = file:read("*all")
+        file:close()
+        local success, prices = pcall(function() return API.JsonDecode(content) end)
+        if success and prices then
+            itemPrices = prices
+            pricesLoaded = true
+            local priceCount = 0
+            for _ in pairs(itemPrices) do priceCount = priceCount + 1 end
+            API.logInfo("Loaded " .. priceCount .. " prices from cache")
+            return true
+        else
+            API.logError("Failed to decode price cache JSON")
+        end
+    else
+        API.logInfo("Price cache file not found")
+    end
+    return false
+end
+
+local function savePriceCache()
+    API.logInfo("Attempting to save price cache to: " .. PRICE_CACHE_FILE)
+    local file, err = io.open(PRICE_CACHE_FILE, "w")
+    if file then
+        local jsonData = API.JsonEncode(itemPrices)
+        API.logInfo("JSON data size: " .. #jsonData .. " bytes")
+        file:write(jsonData)
+        file:close()
+        API.logInfo("Successfully saved price cache to " .. PRICE_CACHE_FILE)
+        return true
+    else
+        API.logError("Failed to save price cache to " .. PRICE_CACHE_FILE)
+        if err then
+            API.logError("Error: " .. tostring(err))
+        end
+        return false
+    end
+end
+
+local function fetchItemPrices()
+    local allItemIds = {}
+
+    for id, _ in pairs(ITEM_IDS.RUNES) do
+        table.insert(allItemIds, id)
+    end
+
+    for id, _ in pairs(ITEM_IDS.PRODUCTS) do
+        table.insert(allItemIds, id)
+    end
+
+    for id, _ in pairs(ITEM_IDS.CONSUMABLES) do
+        table.insert(allItemIds, id)
+    end
+
+    API.logInfo("Fetching prices for " .. #allItemIds .. " items from Grand Exchange...")
+    local prices = API.GetExchangePrice(allItemIds)
+
+    if prices then
+        local priceCount = 0
+        local priceType = type(prices)
+        API.logInfo("Prices type: " .. priceType)
+
+        for itemId, price in pairs(prices) do
+            itemPrices[tostring(itemId)] = price or 0
+            priceCount = priceCount + 1
+            API.logInfo("  Item " .. itemId .. ": " .. (price or 0) .. " gp")
+        end
+
+        if priceCount > 0 then
+            pricesLoaded = true
+            API.logInfo("Fetched " .. priceCount .. " prices successfully")
+            savePriceCache()
+            return true
+        else
+            API.logError("No prices were extracted from the response")
+            return false
+        end
+    else
+        API.logError("API.GetExchangePrice returned nil")
+        return false
+    end
+end
 
 local function updateRuneBreakdown()
     local totalRunes = 0
@@ -336,19 +541,19 @@ end
 
 local function trackingData()
     local data = {
-        { "Ernie's Auto Runecraft", "Version: 2.0" },
+        { "Ernie's Auto Runecraft", "Version: 3.0" },
         { "-------", "-------" },
         { "Runtime:", API.ScriptRuntimeString() },
-        { "- Trips Completed", ernieRuneCrafter.tripCounter },
-        { "- Trips/Hour", calculateTripsPerHour() },
+        { "- Trips Completed", formatNumber(ernieRuneCrafter.tripCounter) },
+        { "- Trips/Hour", formatNumber(calculateTripsPerHour()) },
         { "- Primary Rune Type", (RUNE_TYPE:gsub("^%l", string.upper)) },
         { "- Essence Capacity", essenceCount or "N/A" },
-        { "- XP Gained", (ernieRuneCrafter.currentExp - ernieRuneCrafter.startExp) },
-        { "- XP/Hour", calculateExpPerHour() },
+        { "- XP Gained", formatNumber(ernieRuneCrafter.currentExp - ernieRuneCrafter.startExp) },
+        { "- XP/Hour", formatNumber(calculateExpPerHour()) },
         { "- Current State", ernieRuneCrafter.currentState },
         { "-------", "-------" },
-        { "TOTAL RUNES CRAFTED", ernieRuneCrafter.runesCrafted },
-        { "- Runes/Hour", calculateRunesPerHour() }
+        { "TOTAL RUNES CRAFTED", formatNumber(ernieRuneCrafter.runesCrafted) },
+        { "- Runes/Hour", formatNumber(calculateRunesPerHour()) }
     }
 
     local sortedRunes = {}
@@ -359,12 +564,21 @@ local function trackingData()
     table.sort(sortedRunes, function(a, b) return a.count > b.count end)
 
     for _, runeData in ipairs(sortedRunes) do
-        table.insert(data, { "  - " .. runeData.name, runeData.count })
+        table.insert(data, { "  - " .. runeData.name, formatNumber(runeData.count) })
     end
 
     table.insert(data, { "-------", "-------" })
-    table.insert(data, { "MAGICAL THREAD", ernieRuneCrafter.magicalThreadCrafted })
-    table.insert(data, { "- Thread/Hour", calculateMagicalThreadPerHour() })
+    table.insert(data, { "MAGICAL THREAD", formatNumber(ernieRuneCrafter.magicalThreadCrafted) })
+    table.insert(data, { "- Thread/Hour", formatNumber(calculateMagicalThreadPerHour()) })
+    table.insert(data, { "-------", "-------" })
+
+    if pricesLoaded then
+        table.insert(data, { "PROFIT", formatNumber(calculateProfit()) .. " gp" })
+        table.insert(data, { "- Profit/Hour", formatNumber(calculateProfitPerHour()) .. " gp" })
+    else
+        table.insert(data, { "PROFIT", "Loading prices..." })
+    end
+
     table.insert(data, { "-------", "-------" })
 
     API.DrawTable(data)
@@ -400,6 +614,21 @@ ernieRuneCrafter.stateHandlers[States.INIT] = function(erc)
     API.logInfo("Using rune type: " .. RUNE_TYPE)
     API.logInfo("Workflow: " .. (IS_WILDERNESS and "Wilderness" or "Necromancy"))
     API.logInfo("Teleport method: " .. TELEPORT_METHOD)
+
+    if not loadPriceCache() then
+        API.logInfo("No price cache found, fetching from Grand Exchange...")
+        if not fetchItemPrices() then
+            API.logWarn("Failed to fetch prices, profit calculation will be inaccurate")
+            pricesLoaded = false
+        end
+    else
+        API.logInfo("Price cache loaded successfully")
+    end
+
+    API.logInfo("Prices loaded status: " .. tostring(pricesLoaded))
+    if pricesLoaded then
+        API.logInfo("Sample price check - Air rune (556): " .. getItemPrice(556) .. " gp")
+    end
 
     if TELEPORT_METHOD == "War's Retreat Teleport" then
         warsTeleportAB = API.GetABs_name1("War's Retreat Teleport")
@@ -733,7 +962,7 @@ ernieRuneCrafter.stateHandlers[States.TELEPORT_WITH_MAGE] = function(erc)
     local rift = API.GetAllObjArray1({7134}, 50, {0})
     if #rift > 0 then
         erc:transitionTo(States.ENTER_RIFT)
-        sleepTickRandom(1)
+        sleepTickRandom(3)
     end
 end
 
@@ -867,6 +1096,7 @@ ernieRuneCrafter.stateHandlers[States.APPROACH_ALTAR] = function(erc)
             if not debuffStatus.found then
                 API.logInfo("Using Powerburst of Sorcery...")
                 API.DoAction_Ability_Direct(powerburstOfSorceryAB, 1, API.OFF_ACT_GeneralInterface_route)
+                erc.consumablesUsed.powerbursts = erc.consumablesUsed.powerbursts + 1
                 sleepTickRandom(1)
             else
                 API.logInfo("Powerburst of Sorcery debuff active, skipping...")
@@ -928,6 +1158,9 @@ ernieRuneCrafter.stateHandlers[States.CRAFT_RUNES] = function(erc)
         updateRuneBreakdown()
         updateExpTracking()
         erc.tripCounter = erc.tripCounter + 1
+
+        local currentEssence = essenceCount or calculateEssenceCapacity()
+        erc.consumablesUsed.essence = erc.consumablesUsed.essence + currentEssence
 
         if isSoulAltar and erc.soulChargerTotalCharges > 0 then
             API.logInfo("Soul runes crafted! Resetting charger charges and runic teleport flag.")
@@ -1038,6 +1271,7 @@ ernieRuneCrafter.stateHandlers[States.REFRESH_FAMILIAR] = function(erc)
             if Inventory:Contains(pouchId) then
                 API.logInfo("Using Abyssal Pouch: " .. pouchId)
                 Inventory:DoAction(pouchId, 1, API.OFF_ACT_GeneralInterface_route)
+                erc.consumablesUsed.pouches = erc.consumablesUsed.pouches + 1
                 sleepTickRandom(2)
                 erc.stateData.usedPouch = true
                 break
@@ -1138,6 +1372,16 @@ ernieRuneCrafter.stateHandlers[States.BANKING] = function(erc)
                 BANK_CHEST_ID = erc.stateData.restoreBankId
                 erc.stateData.restoreBankId = nil
             end
+
+            if not erc.checkedStartupFamiliar then
+                local buffStatus = API.Buffbar_GetIDstatus(26095)
+                if buffStatus.found then
+                    erc.consumablesUsed.pouches = erc.consumablesUsed.pouches + 1
+                    API.logInfo("Familiar already summoned at startup, counting 1 pouch")
+                end
+                erc.checkedStartupFamiliar = true
+            end
+
             local hasFamiliarConfigured = toBool(CONFIG.hasAbyssalParasite) or toBool(CONFIG.hasAbyssalLurker) or toBool(CONFIG.hasAbyssalTitan)
             if hasFamiliarConfigured then
                 erc:transitionTo(States.REFRESH_FAMILIAR)
