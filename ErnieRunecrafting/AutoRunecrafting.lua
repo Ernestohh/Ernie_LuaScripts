@@ -1282,7 +1282,7 @@ ernieRuneCrafter.stateHandlers[States.REFRESH_FAMILIAR] = function(erc)
         end
     end
 
-    if TELEPORT_METHOD == "War's Retreat Teleport" then
+    if TELEPORT_METHOD == "GotE Deep Sea Fishing Hub" then
         BANK_CHEST_ID = WARS_BANK_CHEST_ID
     end
     erc:transitionTo(States.BANKING)
@@ -1426,3 +1426,4 @@ API.logWarn("=== Ernie's Auto Runecraft Stopped ===")
 API.logInfo("Total runes crafted: " .. ernieRuneCrafter.runesCrafted)
 
 API.logInfo(formatElapsedTime(ernieRuneCrafter.startTime))
+
