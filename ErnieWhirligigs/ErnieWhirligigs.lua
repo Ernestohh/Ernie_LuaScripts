@@ -258,6 +258,7 @@ API.logWarn("=== Ernie Whirligigs Started ===")
 API.logInfo("Initial Whirligig: " .. INITIAL_WHIRLIGIG)
 API.logInfo("Stacking Whirligig: " .. STACKING_WHIRLIGIG)
 API.logInfo("Max Buff Stacks: " .. MAX_BUFF_STACKS)
+API.Write_fake_mouse_do(false)
 API.SetDrawTrackedSkills(true)
 API.SetDrawLogs(true)
 API.GetTrackedSkills()
@@ -269,5 +270,6 @@ end
 API.logWarn("=== Ernie Whirligigs Stopped ===")
 API.logInfo("Total whirligigs caught: " .. stateMachine.whirligigsCaught)
 API.logInfo(formatElapsedTime(stateMachine.startTime))
+
 
 
