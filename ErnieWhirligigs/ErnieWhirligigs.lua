@@ -1,7 +1,7 @@
 -- Title: ErnieWhirligigs
 -- Author: Ernie
 -- Description: Catching Whirligigs
--- Version: 1.0
+-- Version: 1.1
 -- Category: Skilling
 local API = require("api")
 
@@ -270,6 +270,7 @@ end
 API.logWarn("=== Ernie Whirligigs Stopped ===")
 API.logInfo("Total whirligigs caught: " .. stateMachine.whirligigsCaught)
 API.logInfo(formatElapsedTime(stateMachine.startTime))
+
 
 
 
