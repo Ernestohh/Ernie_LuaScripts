@@ -65,7 +65,7 @@ local INFINITY_ETHEREAL_OUTFIT = {32357,32581, 32582, 32360, 32361}
 local LAW_ETHEREAL_OUTFIT = {32342,32575,32576,32345,32346}
 local DEATH_ETHEREAL_OUTFIT = {32352,32579,32580,32355,32356}
 local BLOOD_ETHEREAL_OUTFIT = {32347,32577,32578,32350,32351}
-local POUCHES = {5509, 5510, 5512, 5514, 24205, 58453}
+local POUCHES = {5509, 5510, 5512, 5514, 24205, 58451}
 local BINDING_ROD = {58896, 58899}
 local POWERBURST_OF_SORCERY = {49063,49065,49067,49069}
 local essenceCount = nil
@@ -156,13 +156,13 @@ end
 local function getPouchesInInventory()
     local foundPouches = {}
 
-    if Inventory:Contains(58453) then
-        table.insert(foundPouches, 58453)
+    if Inventory:Contains(58451) then
+        table.insert(foundPouches, 58451)
         return foundPouches
     end
 
     for _, pouchId in ipairs(POUCHES) do
-        if pouchId ~= 58453 and Inventory:Contains(pouchId) then
+        if pouchId ~= 58451 and Inventory:Contains(pouchId) then
             table.insert(foundPouches, pouchId)
         end
     end
@@ -194,7 +194,7 @@ local function calculateEssenceCapacity()
             capacity = capacity + 12
         elseif pouchId == 24205 then
             capacity = capacity + 18
-        elseif pouchId == 58453 then
+        elseif pouchId == 58451 then
             capacity = capacity + 70
         end
     end
@@ -1426,4 +1426,5 @@ API.logWarn("=== Ernie's Auto Runecraft Stopped ===")
 API.logInfo("Total runes crafted: " .. ernieRuneCrafter.runesCrafted)
 
 API.logInfo(formatElapsedTime(ernieRuneCrafter.startTime))
+
 
