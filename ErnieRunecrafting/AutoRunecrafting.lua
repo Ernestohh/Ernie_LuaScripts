@@ -765,40 +765,8 @@ ernieRuneCrafter.stateHandlers[States.CHECK_RUNIC_ATTUNER] = function(erc)
             }
 
             if altarId == 13649 then
-                local rcLevel = API.GetSkillsTableSkill(40)
-                API.logInfo("Runecrafting level: " .. rcLevel)
-
-                if rcLevel >= 100 and toBool(CONFIG.hasAccessToTimeAltar) then
-                    RUNE_TYPE = "time"
-                elseif rcLevel >= 90 and toBool(CONFIG.hasAccessToSoulAltar) then
-                    RUNE_TYPE = "soul"
-                elseif rcLevel >= 77 and toBool(CONFIG.hasAccessToBloodAltar) then
-                    RUNE_TYPE = "blood"
-                elseif rcLevel >= 65 and toBool(CONFIG.hasAccessToDeathAltar) then
-                    RUNE_TYPE = "death"
-                elseif rcLevel >= 54 then
-                    RUNE_TYPE = "law"
-                elseif rcLevel >= 44 then
-                    RUNE_TYPE = "nature"
-                elseif rcLevel >= 40 and toBool(CONFIG.hasAccessToAstralAltar) then
-                    RUNE_TYPE = "astral"
-                elseif rcLevel >= 35 then
-                    RUNE_TYPE = "chaos"
-                elseif rcLevel >= 27 then
-                    RUNE_TYPE = "cosmic"
-                elseif rcLevel >= 20 then
-                    RUNE_TYPE = "body"
-                elseif rcLevel >= 14 then
-                    RUNE_TYPE = "fire"
-                elseif rcLevel >= 9 then
-                    RUNE_TYPE = "earth"
-                elseif rcLevel >= 5 then
-                    RUNE_TYPE = "water"
-                else
-                    RUNE_TYPE = "air"
-                end
-
-                API.logInfo("Best altar for level " .. rcLevel .. ": " .. RUNE_TYPE)
+                RUNE_TYPE = CONFIG.runeType or "air"
+                API.logInfo("Selected altar from config: " .. RUNE_TYPE)
             elseif altarIdToRune[altarId] then
                 RUNE_TYPE = altarIdToRune[altarId]
                 API.logInfo("Using altar based on VB result: " .. RUNE_TYPE)
@@ -824,7 +792,7 @@ ernieRuneCrafter.stateHandlers[States.CHECK_RUNIC_ATTUNER] = function(erc)
                         hasHadChargesAboveZero = true
                     end
 
-                    local canTeleport = buffText == "10" or buffText == "20" or buffText == "30" or buffText == "40" or (buffText == "0" and hasHadChargesAboveZero)
+                    local canTeleport = API.GetVarbitValue(55993) == 1
 
                     if canTeleport then
                         if RUNE_TYPE == "soul" then
