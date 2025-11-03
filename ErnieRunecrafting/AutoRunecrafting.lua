@@ -1174,9 +1174,45 @@ ernieRuneCrafter.stateHandlers[States.REFRESH_FAMILIAR] = function(erc)
     end
 
     if not toBool(CONFIG.hasAccessToAltarOfWar) then
-        API.logInfo("Summoning familiar needs refresh but no access to Altar of War. Skipping summoning restoration...")
-        erc:transitionTo(States.TELEPORT_TO_BANK)
-        return
+        API.logInfo("No access to Altar of War. Checking for Super restore ability...")
+
+        local superRestoreAB = API.GetABs_name1("Super restore potion")
+
+        if superRestoreAB and superRestoreAB.id > 0 then
+            if not erc.stateData.usedSuperRestore then
+                API.logInfo("Using Super restore ability to restore summoning points...")
+                API.DoAction_Ability_Direct(superRestoreAB, 1, API.OFF_ACT_GeneralInterface_route)
+                erc.stateData.usedSuperRestore = true
+                sleepTickRandom(3)
+                return
+            end
+
+            if not erc.stateData.usedPouch then
+                for _, pouchId in ipairs(ABYSSAL_POUCH) do
+                    if Inventory:Contains(pouchId) then
+                        API.logInfo("Summoning familiar after Super restore...")
+                        Inventory:DoAction(pouchId, 1, API.OFF_ACT_GeneralInterface_route)
+                        erc.consumablesUsed.pouches = erc.consumablesUsed.pouches + 1
+                        sleepTickRandom(2)
+                        erc.stateData.usedPouch = true
+                        break
+                    end
+                end
+
+                if not erc.stateData.usedPouch then
+                    API.logError("No Abyssal Pouch found in inventory!")
+                    erc:transitionTo(States.TELEPORT_TO_BANK)
+                    return
+                end
+            end
+
+            erc:transitionTo(States.TELEPORT_TO_BANK)
+            return
+        else
+            API.logInfo("Super restore ability not found. Skipping summoning restoration...")
+            erc:transitionTo(States.TELEPORT_TO_BANK)
+            return
+        end
     end
 
     local altar = API.GetAllObjArray1({ALTAR_OF_WAR_ID}, 30, {0})
@@ -1394,6 +1430,5 @@ API.logWarn("=== Ernie's Auto Runecraft Stopped ===")
 API.logInfo("Total runes crafted: " .. ernieRuneCrafter.runesCrafted)
 
 API.logInfo(formatElapsedTime(ernieRuneCrafter.startTime))
-
 
 
