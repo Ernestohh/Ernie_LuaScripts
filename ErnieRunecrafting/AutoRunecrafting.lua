@@ -1,7 +1,7 @@
 -- Title: AutoRunecraft
 -- Author: Ernie
 -- Description: Wildy/Um RC
--- Version: 3.0
+-- Version: 4.0
 -- Category: Skilling
 local API = require("api")
 if not CONFIG then
@@ -540,7 +540,7 @@ end
 
 local function trackingData()
     local data = {
-        { "Ernie's Auto Runecraft", "Version: 3.0" },
+        { "Ernie's Auto Runecraft", "Version: 4.0" },
         { "-------", "-------" },
         { "Runtime:", API.ScriptRuntimeString() },
         { "- Trips Completed", formatNumber(ernieRuneCrafter.tripCounter) },
@@ -1394,5 +1394,6 @@ API.logWarn("=== Ernie's Auto Runecraft Stopped ===")
 API.logInfo("Total runes crafted: " .. ernieRuneCrafter.runesCrafted)
 
 API.logInfo(formatElapsedTime(ernieRuneCrafter.startTime))
+
 
 
