@@ -1433,7 +1433,6 @@ API.logWarn("=== Ernie's Auto Runecraft Started ===")
 API.logInfo("Rune Type: " .. RUNE_TYPE)
 API.Write_fake_mouse_do(false)
 API.Write_LoopyLoop(true)
-API.SetDrawLogs(true)
 while API.Read_LoopyLoop() do
     idleCheck()
     updateExpTracking()
@@ -1446,5 +1445,6 @@ API.logWarn("=== Ernie's Auto Runecraft Stopped ===")
 API.logInfo("Total runes crafted: " .. ernieRuneCrafter.runesCrafted)
 
 API.logInfo(formatElapsedTime(ernieRuneCrafter.startTime))
+
 
 
