@@ -1,7 +1,7 @@
 -- Title: AutoRunecraft
 -- Author: Ernie
 -- Description: Wildy/Um RC
--- Version: 4.0
+-- Version: 4.1
 -- Category: Skilling
 local API = require("api")
 if not CONFIG then
@@ -68,6 +68,7 @@ local BLOOD_ETHEREAL_OUTFIT = {32347,32577,32578,32350,32351}
 local POUCHES = {5509, 5510, 5512, 5514, 24205, 58451}
 local BINDING_ROD = {58896, 58899}
 local POWERBURST_OF_SORCERY = {49063,49065,49067,49069}
+local EXTREME_RUNECRAFTING_POTION = {"Extreme runecrafting (4)","Extreme runecrafting (3)","Extreme runecrafting (2)","Extreme runecrafting (1)",}
 local essenceCount = nil
 local braceletAB = nil
 local warsTeleportAB = nil
@@ -540,7 +541,7 @@ end
 
 local function trackingData()
     local data = {
-        { "Ernie's Auto Runecraft", "Version: 4.0" },
+        { "Ernie's Auto Runecraft", "Version: 4.1" },
         { "-------", "-------" },
         { "Runtime:", API.ScriptRuntimeString() },
         { "- Trips Completed", formatNumber(ernieRuneCrafter.tripCounter) },
@@ -1070,6 +1071,20 @@ ernieRuneCrafter.stateHandlers[States.APPROACH_ALTAR] = function(erc)
             end
         end
 
+        if Inventory:ContainsAny(EXTREME_RUNECRAFTING_POTION) then
+            local extremeRcBuffStatus = API.Buffbar_GetIDstatus(44111)
+            if not extremeRcBuffStatus.found then
+                API.logInfo("Using Extreme runecrafting potion...")
+                local extremeRcAB = API.GetABs_name1("Extreme runecrafting potion")
+                if extremeRcAB and extremeRcAB.id > 0 then
+                    API.DoAction_Ability_Direct(extremeRcAB, 1, API.OFF_ACT_GeneralInterface_route)
+                    sleepTickRandom(1)
+                else
+                    API.logWarn("Extreme runecrafting potion ability not found!")
+                end
+            end
+        end
+
         if IS_WILDERNESS then
             Interact:Object(altarName, "Use", 50)
         else
@@ -1418,6 +1433,7 @@ API.logWarn("=== Ernie's Auto Runecraft Started ===")
 API.logInfo("Rune Type: " .. RUNE_TYPE)
 API.Write_fake_mouse_do(false)
 API.Write_LoopyLoop(true)
+API.SetDrawLogs(true)
 while API.Read_LoopyLoop() do
     idleCheck()
     updateExpTracking()
