@@ -6,7 +6,6 @@ local Utils = require("kerapac/KerapacUtils")
 
 local KerapacPreparation = {}
 
--- Replacement functions for removed UI module
 function KerapacPreparation:HandleBankPin()
     if API.DoBankPin(Data.bankPin) then
         if Data.bankPin ~= nil then

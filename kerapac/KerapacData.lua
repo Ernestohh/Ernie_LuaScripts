@@ -1,13 +1,6 @@
 local KerapacData = {}
 
-KerapacData.version = "11.0"
-
--- User configuration - modify these values
-KerapacData.partyLeader = nil -- replace nil with playername like this "Bob" 
-KerapacData.partyMembers = {} -- Add all player names including partyleader like this {"Bob", "Jo", "Mama"}
-KerapacData.bankPin = nil     -- replace nil with your bank pin like this 1234 don't add ""
-KerapacData.discordWebhookUrl = "" -- add your Discord Webhook URL here
-KerapacData.discordUserId = "" -- add your Discord User ID here
+KerapacData.version = "12.0"
 
 KerapacData.prayerType = {
     Curses = { name = "Curses" },
