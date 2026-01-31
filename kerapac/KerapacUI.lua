@@ -165,10 +165,9 @@ function KerapacUI:HandleHardMode()
     end
 end
 
-function KerapacUI:HandleStartFight() 
+function KerapacUI:HandleStartFight()
     API.DoAction_Interface(0x24, 0xffffffff, 1, 1591, 60, -1, API.OFF_ACT_GeneralInterface_route)
     API.Sleep_tick(3)
 end
-
 
 return KerapacUI

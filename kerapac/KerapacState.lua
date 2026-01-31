@@ -67,6 +67,7 @@ local KerapacState = {
     
     isPhase4SetupComplete = false,
     isClonesSetup = false,
+    isBeginFightComplete = false,
     
     isResonanceEnabled = false,
     isMagePrayEnabled = false,
@@ -88,6 +89,7 @@ local KerapacState = {
     
     necrosisStacks = nil,
     residualSoulsStack = nil,
+    residualSoulsMax = nil,
     lastAttackTick = nil,
 
     warpTimeTicks = API.Get_tick(),
@@ -250,6 +252,7 @@ function KerapacState:Reset()
     self.isTeamComplete = false
     self.isPhase4SetupComplete = false
     self.isClonesSetup = false
+    self.isBeginFightComplete = false
     self.isResonanceEnabled = false
     self.isMagePrayEnabled = false
     self.isSoulSplitEnabled = false

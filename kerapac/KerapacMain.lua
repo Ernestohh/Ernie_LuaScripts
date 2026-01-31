@@ -11,7 +11,6 @@ local Combat = require("kerapac/KerapacCombat")
 local HardMode = require("kerapac/KerapacHardMode")
 local Logger = require("kerapac/KerapacLogger")
 local Utils = require("kerapac/KerapacUtils")
-
 local Preparation = require("kerapac/KerapacPreparation")
 local Loot = require("kerapac/KerapacLoot")
 local Lightning = require("kerapac/KerapacLightning")
@@ -19,6 +18,7 @@ local Lightning = require("kerapac/KerapacLightning")
 Logger:Info("Started Ernie's Kerapac Bosser " .. Data.version)
 API.SetMaxIdleTime(5)
 API.Write_fake_mouse_do(false)
+API.TurnOffMrHasselhoff(false)
 -- Initialize configuration from CONFIG if available
 if CONFIG then
     Logger:Info("Loading configuration from CONFIG")
@@ -27,15 +27,12 @@ else
     Logger:Error("No configuration found! Please configure the script first.")
     API.Write_LoopyLoop(false)
 end
-if not API.IsCacheLoaded() then
-    Logger:Error("Cache not found at right location. Redownload cache or adjust cache location in settings.json")
-    API.Write_LoopyLoop(false)
-end
+
 Combat:InitAbilities()
 Utils:handleCombatMode()
 State.startScript = true
 
-while (API.Read_LoopyLoop()) do    
+while (API.Read_LoopyLoop()) do
     if State.startScript then
         API.SetDrawLogs(false)
         Utils:TrackingData()
@@ -106,6 +103,4 @@ while (API.Read_LoopyLoop()) do
     end
 end
 
-
 Logger:Info("Stopped Ernie's Kerapac Bosser " .. Data.version)
-

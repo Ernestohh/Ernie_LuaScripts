@@ -153,20 +153,6 @@ function KerapacUtils:IsFamiliarHpBelowPercentage(hpString, percentage)
     return isBelow
 end
 
-function KerapacUtils:HandleSpecialSummoning()
-    if not (API.Get_tick() - State.summoningSpecialTicks > 4) then return end
-    if not Familiars:HasFamiliar() then return end 
-    if not (Familiars:GetSpellPoints() >= Data.summoningPointsForScroll) then return end
-    if Familiars:GetName() ~= "Hellhound" then return end
-    
-    local isHealable = self:IsFamiliarHpBelowPercentage(API.ScanForInterfaceTest2Get(false, { { 662,0,-1,0 }, { 662,43,-1,0 }, { 662,44,-1,0 }, { 662,64,-1,0 }, { 662,65,-1,0 }, { 662,66,-1,0 }, { 662,66,8,0 } })[1].textids, 70)
-    if not isHealable then return end
-    
-    Familiars:CastSpecialAttack()
-    State.summoningSpecialTicks = API.Get_tick()
-    Logger:Info("Used familiar special attack")
-end
-
 function KerapacUtils:EatFood()
     if not Inventory:ContainsAny(Data.foodItems) and 
        not Inventory:ContainsAny(Data.emergencyDrinkItems) and 
@@ -475,7 +461,7 @@ function KerapacUtils:ValidateAbilityBars()
         excalAB = API.GetABs_name1("Augmented enhanced Excalibur")
     end
 
-    if State.isHardMode then
+    if State.isHardMode and (State.isPartyLeader or not State.isInParty) then
         if not hasVitPot then
             local data = {
                 { "Ernie's Kerapac Bosser ", "Version: " .. Data.version },
@@ -557,6 +543,7 @@ function KerapacUtils:ValidateAbilityBars()
 
     if State.isScriptureEquipped then
         if not State.scripture.AB.enabled then
+            print("tt")
             noScriptureFound = true
         end
     end
@@ -640,27 +627,6 @@ function KerapacUtils:SummonFamiliar()
     end
 end
 
-function KerapacUtils:SetupAutoFire()
-    if Familiars:HasFamiliar() and not State.isAutoFireSetup and Familiars:GetName() ~= "Hellhound" then
-        API.DoAction_Interface(0xffffffff,0xffffffff,1,662,74,-1,API.OFF_ACT_GeneralInterface_route)
-        self:SleepTickRandom(2)
-        API.KeyboardPress(1, 60, 110)
-        API.KeyboardPress2(0x0D, 60, 110)
-        Logger:Info("Setting up auto fire of scrolls")
-        State.isAutoFireSetup = true
-    else
-        Logger:Debug("auto fire not setup")
-    end
-end
-
-function KerapacUtils:StoreScrollsInFamiliar()
-    if Familiars:HasFamiliar() and State.isAutoFireSetup then
-        API.DoAction_Interface(0xffffffff,0xffffffff,1,662,78,-1,API.OFF_ACT_GeneralInterface_route)
-        Logger:Info("Storing scrolls in familiar")
-        self:SleepTickRandom(1)
-    end
-end
-
 function KerapacUtils:RenewFamiliar()
     if API.Buffbar_GetIDstatus(26095).found then
         local timeRemaining = tonumber(string.match(API.Buffbar_GetIDstatus(26095).text, "(-?%d+%.?%d*)"))
@@ -695,6 +661,14 @@ function KerapacUtils:CheckWeaponType()
             if itemId == Data.omniGuardIds[k] then
                 State.hasOmniGuardEquipped = true
                 Logger:Info("Omni Guard equipped")
+                break
+            end
+        end
+         for l = 1, #Data.soulbornLanternIds do
+            if itemId == Data.soulbornLanternIds[l] then
+                State.hasSoulboundLanternEquipped = true
+                State.residualSoulsMax = 4
+                Logger:Info("Soulbound Lantern equipped")
                 break
             end
         end
@@ -779,15 +753,15 @@ end
 
 function KerapacUtils:handleCombatMode()
     if State.isFullManualEnabled then return end
-    if API.VB_FindPSettinOrder(627, 0).state == 1073750353 then
+    if API.GetVarbitValue(21685) == 0 then
         State.isFullManualEnabled = true
         self:SleepTickRandom(1)
     else
-        API.DoAction_Interface(0xffffffff,0xffffffff,4,1430,265,-1,API.OFF_ACT_GeneralInterface_route)
+        API.DoAction_Interface(0xffffffff,0xffffffff,7,1430,254,-1,API.OFF_ACT_GeneralInterface_route2)
         self:SleepTickRandom(1)
     end
     if State.isAutoRetaliateDisabled then return end
-    if API.VB_FindPSettinOrder(462, 0).state == 1 then
+    if API.GetVarbitValue(42166) == 1 then
         State.isAutoRetaliateDisabled = true
         self:SleepTickRandom(1)
     else

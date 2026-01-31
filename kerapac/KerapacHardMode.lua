@@ -79,7 +79,7 @@ function KerapacHardMode:HandlePhase4()
         end
     end
     
-    local targetInfo = API.ReadTargetInfo()
+    local targetInfo = API.ReadLpInteracting()
 
     local northEcho = API.GetAllObjArray2({Data.kerapacClones}, 100, {1}, WPOINT.new(State.centerOfArenaPosition.x + Data.echoAreasMap.northEcho.echoSpot.x, State.centerOfArenaPosition.y + Data.echoAreasMap.northEcho.echoSpot.y, 1))
     local westEcho = API.GetAllObjArray2({Data.kerapacClones}, 100, {1}, WPOINT.new(State.centerOfArenaPosition.x + Data.echoAreasMap.westEcho.echoSpot.x, State.centerOfArenaPosition.y + Data.echoAreasMap.westEcho.echoSpot.y, 1))
@@ -107,7 +107,7 @@ function KerapacHardMode:HandlePhase4()
         end
     end
 
-    if targetInfo.Target_Name ~= "Echo of Kerapac" then
+    if targetInfo.Name ~= "Echo of Kerapac" then
         self:AttackEcho()
     end
 
@@ -142,7 +142,7 @@ function KerapacHardMode:HandlePhase4()
         if not State.isEchoesDead then
             State.isEchoesDead = true
         end
-        if targetInfo.Target_Name ~= "Kerapac, the bound" then
+        if targetInfo.Name ~= "Kerapac, the bound" then
             Combat:AttackKerapac() 
         end
     end

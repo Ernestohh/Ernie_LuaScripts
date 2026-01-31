@@ -62,52 +62,45 @@ function KerapacCombat:HasDeathInvocation()
     return API.Buffbar_GetIDstatus(30100).id > 0
 end
 
+local function isOnActionBar(ability)
+    if not ability then return false end
+    if not ability.AB then return false end
+    return (ability.AB.slot or 0) ~= 0
+end
+
 function KerapacCombat:CheckAvailableBuffs()
     self:InitAbilities()
     State.hasOverload = Utils:WhichOverload() ~= ""
     State.hasWeaponPoison = Utils:WhichWeaponPoison() ~= ""
     State.hasAdrenalinePotion = Utils:WhichAdrenalinePotion() ~= ""
-    State.hasDebilitate = Data.extraAbilities.debilitateAbility.AB.slot ~= 0
-    State.hasDevotion = Data.extraAbilities.devotionAbility.AB.slot ~= 0
-    State.hasReflect = Data.extraAbilities.reflectAbility.AB.slot ~= 0
-    State.hasImmortality = Data.extraAbilities.immortalityAbility.AB.slot ~= 0
-    
-    local darknessOnBar = Data.extraAbilities.darknessAbility.AB.slot ~= 0
-    if darknessOnBar then
-        State.hasDarkness = Data.extraAbilities.darknessAbility.AB.enabled
+    State.hasDebilitate = isOnActionBar(Data.extraAbilities.debilitateAbility)
+    State.hasDevotion = isOnActionBar(Data.extraAbilities.devotionAbility)
+    State.hasReflect = isOnActionBar(Data.extraAbilities.reflectAbility)
+    State.hasImmortality = isOnActionBar(Data.extraAbilities.immortalityAbility)
+
+    if isOnActionBar(Data.extraAbilities.darknessAbility) then
+        State.hasDarkness = Data.extraAbilities.darknessAbility.AB.enabled or false
     end
-    
-    local invokeDeathOnBar = Data.extraAbilities.invokeDeathAbility.AB.slot ~= 0
-    if invokeDeathOnBar then
-        State.hasInvokeDeath = Data.extraAbilities.invokeDeathAbility.AB.enabled
+
+    if isOnActionBar(Data.extraAbilities.invokeDeathAbility) then
+        State.hasInvokeDeath = Data.extraAbilities.invokeDeathAbility.AB.enabled or false
     end
-    
-    local splitSoulOnBar = Data.extraAbilities.splitSoulAbility.AB.slot ~= 0
-    if splitSoulOnBar then
-        State.hasSplitSoul = Data.extraAbilities.splitSoulAbility.AB.enabled
+
+    if isOnActionBar(Data.extraAbilities.splitSoulAbility) then
+        State.hasSplitSoul = Data.extraAbilities.splitSoulAbility.AB.enabled or false
     end
-    
+
     Utils:CheckForScripture()
-    
+
     Logger:Debug("Buff check complete")
 end
 
 function KerapacCombat:CheckForDebilitateOnTarget()
-    for _, value in ipairs(API.ReadTargetInfo().Buff_stack) do
-        if value == Data.extraAbilities.debilitateAbility.debuffId then
-            return true
-        end
-    end
-    return false
+    return API.TargetHasBuff("Debilitate")
 end
 
 function KerapacCombat:CheckForBloatOnTarget()
-    for _, value in ipairs(API.ReadTargetInfo().Buff_stack) do
-        if value == Data.extraAbilities.bloatAbility.buffId then
-            return true
-        end
-    end
-    return false
+    return API.TargetHasBuff("Bloat")
 end
 
 function KerapacCombat:CheckForSplitSoul()
@@ -366,6 +359,12 @@ function KerapacCombat:HandleBossPhase()
         return
     end
 
+    if kerapacInfo.Life <= 50000 and State.kerapacPhase >= 4 then
+        if Inventory:Contains("Luck of the Dwarves") then
+            Inventory:Equip("Luck of the Dwarves")
+        end
+    end
+
     if kerapacInfo.Life <= 0 and State.kerapacPhase >= 4 then
         Logger:Info("Preparing to loot")
         self:HandleBossDeath()
@@ -377,7 +376,7 @@ end
 function KerapacCombat:ApplyVulnerability()
     if not Inventory:Contains("Vulnerability bomb") and not API.GetABs_name1("Vulnerability bomb").enabled then return end
     
-    if API.ReadTargetInfo().Target_Name ~= "Kerapac, the bound" and API.ReadTargetInfo().Target_Name ~= "Echo of Kerapac" then return end
+    if API.ReadLpInteracting().Name ~= "Kerapac, the bound" and API.ReadLpInteracting().Name ~= "Echo of Kerapac" then return end
     
     if not (API.Get_tick() - State.vulnTicks > 12) then return end
     
@@ -388,19 +387,12 @@ function KerapacCombat:ApplyVulnerability()
         return 
     end
     
-    local hasVuln = false
-    for _, value in ipairs(API.ReadTargetInfo().Buff_stack) do
-        if value == 14395 then
-            hasVuln = true
-        end
-    end
-    
     local vulnAB = API.GetABs_name1("Vulnerability bomb")
-    if not hasVuln then
+    if not API.TargetHasBuff("Vulnerability") then
         API.DoAction_Ability_Direct(vulnAB, 1, API.OFF_ACT_GeneralInterface_route)
-        if API.ReadTargetInfo().Target_Name == "Kerapac, the bound" then
+        if API.ReadLpInteracting().Name == "Kerapac, the bound" then
             self:AttackKerapac()
-        elseif API.ReadTargetInfo().Target_Name == "Echo of Kerapac" then
+        elseif API.ReadLpInteracting().Name == "Echo of Kerapac" then
             local HardMode = require("kerapac/KerapacHardMode")
             HardMode:AttackEcho()
         end
@@ -424,7 +416,7 @@ function KerapacCombat:HandleCombatState(state)
             State.islightningPhase = false
         end
         State.canAttack = false
-        Utils:SleepTickRandom(2)
+        Utils:SleepTickRandom(1)
         if not API.DoAction_Dive_Tile(WPOINT.new(math.floor(self:GetKerapacInformation().TileX / 512), math.floor(self:GetKerapacInformation().TileY / 512), math.floor(self:GetKerapacInformation().TileZ / 512))) then
             API.DoAction_Tile(WPOINT.new(math.floor(self:GetKerapacInformation().TileX / 512), math.floor(self:GetKerapacInformation().TileY / 512), math.floor(self:GetKerapacInformation().TileZ / 512)))
         end
@@ -559,10 +551,10 @@ function KerapacCombat:UseDebilitateAbility()
 end
 
 function KerapacCombat:UseFreedomAbility()
-    if Data.extraAbilities.freedomAbility.AB.id > 0 and
-        Data.extraAbilities.freedomAbility.AB.enabled and 
-        not API.Buffbar_GetIDstatus(Data.extraAbilities.freedomAbility.buffId).found then
-        API.DoAction_Ability_check(Data.extraAbilities.freedomAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+    local freedom = Data.extraAbilities.freedomAbility
+    if freedom and freedom.AB and (freedom.AB.id or 0) > 0 and freedom.AB.enabled
+        and not API.Buffbar_GetIDstatus(freedom.buffId).found then
+        API.DoAction_Ability_check(freedom.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
         Logger:Info("Freeing myself from this blasphemy")
     end
 end
@@ -668,506 +660,350 @@ function KerapacCombat:HandleResonance()
     State.resonanceTicks = API.Get_tick()
 end
 
-function KerapacCombat:CastNextAbility()
-    self:InitAbilities()
-    
-    --local attackTick = API.VB_FindPSettinOrder(4501).state
-    local timeWarpActionButton = API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time"
-    --if attackTick == State.lastAttackTick then return end
-    if not (API.Get_tick() - State.globalCooldownTicks > 2) then return end
-    if not State.canAttack then return end
-    
-    State.hasBloatDebuff = self:CheckForBloatOnTarget()
-    State.necrosisStacks = API.VB_FindPSettinOrder(10986).state
-    State.residualSoulsStack = API.VB_FindPSettinOrder(11035).state
-    --State.lastAttackTick = attackTick
-    State.globalCooldownTicks = API.Get_tick()
-    
-    self:CheckForSplitSoul()
-    Utils:handleTimeWarpBuff()
-    
-    if Data.extraAbilities.conjureUndeadArmyAbility.AB.enabled 
-    and API.VB_FindPSettinOrder(10994).state < 1 
-    and API.VB_FindPSettinOrder(11018).state < 1 
-    and API.VB_FindPSettinOrder(11006).state < 1 then
-        self:UseConjureUndeadArmy()
-        return
-    end
+function KerapacCombat:HasDefensiveBuffActive()
+    return API.Buffbar_GetIDstatus(Data.extraAbilities.debilitateAbility.debuffId).found
+        or API.Buffbar_GetIDstatus(Data.extraAbilities.reflectAbility.buffId).found
+        or API.Buffbar_GetIDstatus(Data.extraAbilities.devotionAbility.buffId).found
+        or API.Buffbar_GetIDstatus(Data.extraAbilities.immortalityAbility.buffId).found
+        or API.Buffbar_GetIDstatus(Data.extraAbilities.barricadeAbility.buffId).found
+        or API.Buffbar_GetIDstatus(Data.extraAbilities.rejuvenateAbility.buffId).found
+end
 
-    if Data.extraAbilities.conjureSkeletonWarriorAbility.AB.enabled 
-    and API.VB_FindPSettinOrder(10994).state < 1 then
-        self:UseConjureSkeletonWarrior()
-        return
-    end
+local function isDefensiveReady(ability, minAdrenaline)
+    if not ability then return false end
+    if not ability.AB then return false end
+    if not ability.AB.enabled then return false end
+    if (ability.AB.cooldown_timer or 999) > 0 then return false end
+    if minAdrenaline and API.GetAddreline_() < minAdrenaline then return false end
+    return true
+end
 
-    if Data.extraAbilities.conjureVengefulGhostAbility.AB.enabled 
-    and API.VB_FindPSettinOrder(11018).state < 1 then
-        self:UseConjureVengefulGhost()
-        return
-    end
+local function isAbilityReady(ability)
+    if not ability then return false end
+    if not ability.AB then return false end
+    return ability.AB.enabled == true
+end
 
-    if Data.extraAbilities.conjurePutridZombieAbility.AB.enabled 
-    and API.VB_FindPSettinOrder(11006).state < 1 then
-        self:UseConjurePutridZombie()
-        return
-    end
+local function isAbilityOffCooldown(ability)
+    if not ability then return false end
+    if not ability.AB then return false end
+    if not ability.AB.enabled then return false end
+    return (ability.AB.cooldown_timer or 999) <= 0
+end
 
-    if Data.extraAbilities.darknessAbility.AB.cooldown_timer <= 0 
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.darknessAbility.buffId).found 
-    and Data.extraAbilities.darknessAbility.AB.enabled
-    and State.hasDarkness then
-        self:UseDarknessAbility()
-        return
-    end
+local function isInJumpAttackState()
+    return State.currentState == Data.bossStateEnum.JUMP_ATTACK_COMMENCE.name
+        or State.currentState == Data.bossStateEnum.JUMP_ATTACK_IN_AIR.name
+        or State.currentState == Data.bossStateEnum.JUMP_ATTACK_LANDED.name
+end
 
-    if Data.extraAbilities.invokeDeathAbility.AB.cooldown_timer <= 0 
-    and not self:HasDeathInvocation() 
-    and not self:HasMarkOfDeath()
-    and Data.extraAbilities.invokeDeathAbility.AB.enabled 
-    and State.hasInvokeDeath then
-        self:UseInvokeDeathAbility()
-        return
-    end
+function KerapacCombat:UseWarpTimeIfAvailable(timeWarpActionButton)
+    if not timeWarpActionButton then return end
+    if State.kerapacPhase < 4 then return end
 
-    if (State.kerapacPhase < 3)
-    and Data.extraAbilities.splitSoulAbility.AB.cooldown_timer <= 0 
-    and Data.extraAbilities.splitSoulAbility.AB.id > 0 
-    and Data.extraAbilities.splitSoulAbility.AB.enabled 
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.devotionAbility.buffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.splitSoulAbility.buffId).found then
-        self:UseSplitSoulAbility()
-        return
+    if API.GetHPrecent() > 70 then
+        self:UseWarpTime()
+    else
+        local oldThreshold = Data.emergencyEatThreshold
+        Data.emergencyEatThreshold = API.GetHPrecent() + 10
+        Utils:EatFood()
+        Data.emergencyEatThreshold = oldThreshold
+        self:UseWarpTime()
     end
-    
-    if Data.extraAbilities.commandSkeletonWarriorAbility.AB.cooldown_timer <= 0 
-    and Data.extraAbilities.commandSkeletonWarriorAbility.AB.enabled then
-        self:UseCommandSkeletonWarrior()
-        return
-    end
+end
 
-    if Data.extraAbilities.commandVengefulGhostAbility.AB.cooldown_timer <= 0 
-    and Data.extraAbilities.commandVengefulGhostAbility.AB.enabled then
-        self:UseCommandVengefulGhost()
-        return
-    end
+function KerapacCombat:CastDefensiveAbility(timeWarpActionButton)
+    if self:HasDefensiveBuffActive() then return false end
+    if isInJumpAttackState() then return false end
+    if State.isPhasing then return false end
 
-    if Data.extraAbilities.immortalityAbility.AB.cooldown_timer <= 0 
-    and Data.extraAbilities.immortalityAbility.AB.enabled 
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.debilitateAbility.debuffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.reflectAbility.buffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.devotionAbility.buffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.immortalityAbility.buffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.barricadeAbility.buffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.rejuvenateAbility.buffId).found
-    and State.currentState ~= Data.bossStateEnum.JUMP_ATTACK_COMMENCE.name
-    and State.currentState ~= Data.bossStateEnum.JUMP_ATTACK_IN_AIR.name
-    and State.currentState ~= Data.bossStateEnum.JUMP_ATTACK_LANDED.name
+    -- Immortality (Phase 4 only, after echoes dead)
+    if isDefensiveReady(Data.extraAbilities.immortalityAbility, Data.extraAbilities.immortalityAbility.threshold)
     and not State.islightningPhase
-    and not State.isPhasing
     and State.kerapacPhase >= 4
-    and State.isEchoesDead
-    and API.GetAddreline_() >= Data.extraAbilities.immortalityAbility.threshold then
-        if timeWarpActionButton then
-            if API.GetHPrecent() > 70 then
-                self:UseWarpTime()
-            else
-                local oldThreshold = Data.emergencyEatThreshold
-                Data.emergencyEatThreshold = API.GetHPrecent()+10
-                Utils:EatFood()
-                Data.emergencyEatThreshold = oldThreshold
-                self:UseWarpTime()
-            end
-        end
+    and State.isEchoesDead then
+        self:UseWarpTimeIfAvailable(timeWarpActionButton)
         self:UseImmortalityAbility()
-        return
+        return true
     end
 
-    if not API.DeBuffbar_GetIDstatus(55524).found
-    and not State.isPhasing
-    and State.necrosisStacks > 11
-    and API.GetAddreline_() >= 25 then
-        if (State.kerapacPhase == 3 and not State.islightningPhase) or (State.kerapacPhase ~= 3) then
-            if State.hasDeathGuardEquipped and API.GetABs_name1("Weapon Special Attack").enabled then
-                self:UseSpecialAttackAbility()
-                return
-            elseif API.GetABs_name1("Essence of Finality").enabled then
-                self:UseEssenceOfFinalityAbility()
-                return
-            end
-        end
+    -- Barricade (Lightning phase or Phase 4)
+    if isDefensiveReady(Data.extraAbilities.barricadeAbility, Data.extraAbilities.barricadeAbility.threshold)
+    and (State.islightningPhase or State.kerapacPhase >= 4) then
+        self:UseWarpTimeIfAvailable(timeWarpActionButton)
+        self:UseBarricadeAbility()
+        return true
     end
 
-    if State.necrosisStacks > 11 
-    and not API.Buffbar_GetIDstatus(Data.deathSparkReady).found
-    and not State.isPhasing then
-        if (State.kerapacPhase == 3 and not State.islightningPhase) or (State.kerapacPhase ~= 3) then
-            self:UseFingerOfDeathAbility()
-            return
-        end
-    end
-
-    if not API.DeBuffbar_GetIDstatus(55524).found
-    and not State.isPhasing
-    and State.necrosisStacks > 5
-    and API.GetAddreline_() >= 25 then
-        if (State.kerapacPhase == 3 and not State.islightningPhase) or (State.kerapacPhase ~= 3) then
-            if State.hasDeathGuardEquipped and API.GetABs_name1("Weapon Special Attack").enabled then
-                self:UseSpecialAttackAbility()
-                return
-            elseif API.GetABs_name1("Essence of Finality").enabled then
-                self:UseEssenceOfFinalityAbility()
-                return
-            end
-        end
-    end
-
-    if State.residualSoulsStack > 4 
-    and Data.extraAbilities.volleyOfSoulsAbility.AB.enabled 
-    and not API.Buffbar_GetIDstatus(Data.deathSparkReady).found
-    and not State.isPhasing then
-        if (State.kerapacPhase == 3 and not State.islightningPhase) or (State.kerapacPhase ~= 3) then
-            self:UseVolleyOfSoulsAbility()
-            return
-        end
-    end
-
-    if not API.DeBuffbar_GetIDstatus(55524).found
-    and not State.isPhasing
-    and State.necrosisStacks > 11
-    and API.GetAddreline_() >= 25 then
-        if State.hasDeathGuardEquipped and API.GetABs_name1("Weapon Special Attack").enabled then
-            self:UseSpecialAttackAbility()
-            return
-        elseif API.GetABs_name1("Essence of Finality").enabled then
-            self:UseEssenceOfFinalityAbility()
-            return
-        end
-    end
-
-    if State.necrosisStacks > 11 
-    and not API.Buffbar_GetIDstatus(Data.deathSparkReady).found
-    and not State.isPhasing then
-        self:UseFingerOfDeathAbility()
-        return
-    end
-
-    if not API.DeBuffbar_GetIDstatus(55524).found
-    and not State.isPhasing
-    and State.necrosisStacks > 5
-    and API.GetAddreline_() >= 25 then
-        if State.hasDeathGuardEquipped and API.GetABs_name1("Weapon Special Attack").enabled then
-            self:UseSpecialAttackAbility()
-            return
-        elseif API.GetABs_name1("Essence of Finality").enabled then
-            self:UseEssenceOfFinalityAbility()
-            return
-        end
-    end
-
-    if State.residualSoulsStack > 2
-    and Data.extraAbilities.volleyOfSoulsAbility.AB.enabled 
-    and not API.Buffbar_GetIDstatus(Data.deathSparkReady).found
-    and not State.isPhasing then
-        self:UseVolleyOfSoulsAbility()
-        return
-    end
-
-    if Data.extraAbilities.barricadeAbility.AB.cooldown_timer <= 0 
-    and Data.extraAbilities.barricadeAbility.AB.enabled 
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.debilitateAbility.debuffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.reflectAbility.buffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.devotionAbility.buffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.immortalityAbility.buffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.barricadeAbility.buffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.rejuvenateAbility.buffId).found
-    and State.currentState ~= Data.bossStateEnum.JUMP_ATTACK_COMMENCE.name
-    and State.currentState ~= Data.bossStateEnum.JUMP_ATTACK_IN_AIR.name
-    and State.currentState ~= Data.bossStateEnum.JUMP_ATTACK_LANDED.name
-    and not State.isPhasing
-    and API.GetAddreline_() >= Data.extraAbilities.barricadeAbility.threshold then
-        if timeWarpActionButton and State.kerapacPhase >= 4 then
-            if API.GetHPrecent() > 70 then
-                self:UseWarpTime()
-            else
-                local oldThreshold = Data.emergencyEatThreshold
-                Data.emergencyEatThreshold = API.GetHPrecent()+10
-                Utils:EatFood()
-                Data.emergencyEatThreshold = oldThreshold
-                self:UseWarpTime()
-            end
-        end
-        if State.islightningPhase or State.kerapacPhase >= 4 then
-            self:UseBarricadeAbility()
-            return
-        end
-    end
-
-    if Data.extraAbilities.rejuvenateAbility.AB.cooldown_timer <= 0 
-    and Data.extraAbilities.rejuvenateAbility.AB.enabled 
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.debilitateAbility.debuffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.reflectAbility.buffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.devotionAbility.buffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.immortalityAbility.buffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.barricadeAbility.buffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.rejuvenateAbility.buffId).found
-    and State.currentState ~= Data.bossStateEnum.JUMP_ATTACK_COMMENCE.name
-    and State.currentState ~= Data.bossStateEnum.JUMP_ATTACK_IN_AIR.name
-    and State.currentState ~= Data.bossStateEnum.JUMP_ATTACK_LANDED.name
+    -- Rejuvenate (Phase 4 only, not lightning)
+    if isDefensiveReady(Data.extraAbilities.rejuvenateAbility, Data.extraAbilities.rejuvenateAbility.threshold)
     and not State.islightningPhase
-    and not State.isPhasing
-    and State.kerapacPhase >= 4
-    and API.GetAddreline_() >= Data.extraAbilities.rejuvenateAbility.threshold then
-        if timeWarpActionButton then
-            if API.GetHPrecent() > 70 then
-                self:UseWarpTime()
-            else
-                local oldThreshold = Data.emergencyEatThreshold
-                Data.emergencyEatThreshold = API.GetHPrecent()+10
-                Utils:EatFood()
-                Data.emergencyEatThreshold = oldThreshold
-                self:UseWarpTime()
-            end
-        end
+    and State.kerapacPhase >= 4 then
+        self:UseWarpTimeIfAvailable(timeWarpActionButton)
         self:UseRejuvenateAbility()
-        return
+        return true
     end
 
-    if Data.extraAbilities.reflectAbility.AB.cooldown_timer <= 0 
-    and Data.extraAbilities.reflectAbility.AB.enabled 
-    and API.GetAddreline_() >= Data.extraAbilities.reflectAbility.threshold
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.debilitateAbility.debuffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.reflectAbility.buffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.devotionAbility.buffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.immortalityAbility.buffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.barricadeAbility.buffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.rejuvenateAbility.buffId).found
-    and State.currentState ~= Data.bossStateEnum.JUMP_ATTACK_COMMENCE.name
-    and State.currentState ~= Data.bossStateEnum.JUMP_ATTACK_IN_AIR.name
-    and State.currentState ~= Data.bossStateEnum.JUMP_ATTACK_LANDED.name 
-    and not State.isPhasing then
-        if State.kerapacPhase >= 4 
-        and timeWarpActionButton then
-            if API.GetHPrecent() > 70 then
-                self:UseWarpTime()
-            else
-                local oldThreshold = Data.emergencyEatThreshold
-                Data.emergencyEatThreshold = API.GetHPrecent()+10
-                Utils:EatFood()
-                Data.emergencyEatThreshold = oldThreshold
-                self:UseWarpTime()
-            end
-        end
-        if State.islightningPhase or State.kerapacPhase >= 4 then
-            self:UseReflectAbility()
-            return
-        end
+    -- Reflect (Lightning phase or Phase 4)
+    if isDefensiveReady(Data.extraAbilities.reflectAbility, Data.extraAbilities.reflectAbility.threshold)
+    and (State.islightningPhase or State.kerapacPhase >= 4) then
+        self:UseWarpTimeIfAvailable(timeWarpActionButton)
+        self:UseReflectAbility()
+        return true
     end
 
-    if Data.extraAbilities.devotionAbility.AB.cooldown_timer <= 0 
-    and Data.extraAbilities.devotionAbility.AB.enabled 
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.debilitateAbility.debuffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.reflectAbility.buffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.devotionAbility.buffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.immortalityAbility.buffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.barricadeAbility.buffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.rejuvenateAbility.buffId).found
-    and State.currentState ~= Data.bossStateEnum.JUMP_ATTACK_COMMENCE.name
-    and State.currentState ~= Data.bossStateEnum.JUMP_ATTACK_IN_AIR.name
-    and State.currentState ~= Data.bossStateEnum.JUMP_ATTACK_LANDED.name
-    and not State.isPhasing
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.splitSoulAbility.buffId).found
-    and API.GetAddreline_() >= Data.extraAbilities.devotionAbility.threshold then
-        if State.kerapacPhase >= 4 
-        and timeWarpActionButton then
-            if API.GetHPrecent() > 70 then
-                self:UseWarpTime()
-            else
-                local oldThreshold = Data.emergencyEatThreshold
-                Data.emergencyEatThreshold = API.GetHPrecent()+10
-                Utils:EatFood()
-                Data.emergencyEatThreshold = oldThreshold
-                self:UseWarpTime()
-            end
-        end
+    -- Devotion (not during split soul)
+    if isDefensiveReady(Data.extraAbilities.devotionAbility, Data.extraAbilities.devotionAbility.threshold)
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.splitSoulAbility.buffId).found then
+        self:UseWarpTimeIfAvailable(timeWarpActionButton)
         self:UseDevotionAbility()
-        return
-    end
-    
-    if Data.extraAbilities.debilitateAbility.AB.cooldown_timer <= 0 
-    and Data.extraAbilities.debilitateAbility.AB.enabled 
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.debilitateAbility.debuffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.reflectAbility.buffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.devotionAbility.buffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.immortalityAbility.buffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.barricadeAbility.buffId).found
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.rejuvenateAbility.buffId).found
-    and State.currentState ~= Data.bossStateEnum.JUMP_ATTACK_COMMENCE.name
-    and State.currentState ~= Data.bossStateEnum.JUMP_ATTACK_IN_AIR.name
-    and State.currentState ~= Data.bossStateEnum.JUMP_ATTACK_LANDED.name
-    and not State.isPhasing
-    and API.GetAddreline_() >= Data.extraAbilities.debilitateAbility.threshold then
-        if State.kerapacPhase >= 4 
-        and timeWarpActionButton then
-            if API.GetHPrecent() > 70 then
-                self:UseWarpTime()
-            else
-                local oldThreshold = Data.emergencyEatThreshold
-                Data.emergencyEatThreshold = API.GetHPrecent()+10
-                Utils:EatFood()
-                Data.emergencyEatThreshold = oldThreshold
-                self:UseWarpTime()
-            end
-        end
-        if State.islightningPhase or State.kerapacPhase >= 4 then
-            self:UseDebilitateAbility()
-            return 
-        end
+        return true
     end
 
-    if Data.extraAbilities.deathSkullsAbility.AB.cooldown_timer <= 0 
-    and Data.extraAbilities.deathSkullsAbility.AB.enabled 
-    and API.GetAddreline_() >= Data.extraAbilities.deathSkullsAbility.threshold 
-    and not API.Buffbar_GetIDstatus(Data.deathSparkReady).found
-    and not State.isPhasing then
-        if State.kerapacPhase >= 4 
-        and timeWarpActionButton then
-            if API.GetHPrecent() > 70 then
-                self:UseWarpTime()
-            else
-                local oldThreshold = Data.emergencyEatThreshold
-                Data.emergencyEatThreshold = API.GetHPrecent()+10
-                Utils:EatFood()
-                Data.emergencyEatThreshold = oldThreshold
-                self:UseWarpTime()
-            end
-        end
-        if (State.kerapacPhase == 3 and not State.islightningPhase) or (State.kerapacPhase ~= 3) then
-            self:UseDeathSkullsAbility()
-            Utils:SleepTickRandom(1)
-            Utils:DrinkAdrenalinePotion()
-            return
-        end
+    -- Debilitate (Lightning phase or Phase 4)
+    if isDefensiveReady(Data.extraAbilities.debilitateAbility, Data.extraAbilities.debilitateAbility.threshold)
+    and (State.islightningPhase or State.kerapacPhase >= 4) then
+        self:UseWarpTimeIfAvailable(timeWarpActionButton)
+        self:UseDebilitateAbility()
+        return true
     end
 
-    if Data.extraAbilities.livingDeathAbility.AB.cooldown_timer <= 0 
-    and Data.extraAbilities.livingDeathAbility.AB.enabled 
-    and API.GetAddreline_() >= Data.extraAbilities.livingDeathAbility.threshold 
-    and not State.isPhasing 
-    and not API.Buffbar_GetIDstatus(Data.extraAbilities.livingDeathAbility.buffId).found then
-        if State.kerapacPhase >= 4 
-        and timeWarpActionButton then
-            if API.GetHPrecent() > 70 then
-                self:UseWarpTime()
-            else
-                local oldThreshold = Data.emergencyEatThreshold
-                Data.emergencyEatThreshold = API.GetHPrecent()+10
-                Utils:EatFood()
-                Data.emergencyEatThreshold = oldThreshold
-                self:UseWarpTime()
-            end
-        end
-        self:UseLivingDeathAbility()
-        Utils:SleepTickRandom(1)
-        Utils:DrinkAdrenalinePotion()
-        return
-    end
-
-    if not API.Buffbar_GetIDstatus(55480).found 
-    and not API.DeBuffbar_GetIDstatus(55480).found
-    and not State.isPhasing
-    and API.GetAddreline_() >= 30 then
-        if (State.kerapacPhase == 3 and not State.islightningPhase) or (State.kerapacPhase ~= 3) then
-            if State.hasOmniGuardEquipped and API.GetABs_name1("Weapon Special Attack").enabled then
-                self:UseSpecialAttackAbility()
-            elseif API.GetABs_name1("Essence of Finality").enabled then
-                self:UseEssenceOfFinalityAbility()
-            end
-        end
-    end
-
-    if not API.DeBuffbar_GetIDstatus(55524).found
-    and not State.isPhasing
-    and State.necrosisStacks > 5
-    and API.GetAddreline_() >= 25 then
-        if (State.kerapacPhase == 3 and not State.islightningPhase) or (State.kerapacPhase ~= 3) then
-            if State.hasDeathGuardEquipped and API.GetABs_name1("Weapon Special Attack").enabled then
-                self:UseSpecialAttackAbility()
-            elseif API.GetABs_name1("Essence of Finality").enabled then
-                self:UseEssenceOfFinalityAbility()
-            end
-        end
-    end
-
-    if Data.extraAbilities.resonanceAbility.AB.cooldown_timer <= 0
-    and Data.extraAbilities.resonanceAbility.AB.enabled  
-    and not State.isPhasing
-    and State.currentState ~= Data.bossStateEnum.JUMP_ATTACK_COMMENCE.name
-    and State.currentState ~= Data.bossStateEnum.JUMP_ATTACK_IN_AIR.name
-    and State.currentState ~= Data.bossStateEnum.JUMP_ATTACK_LANDED.name 
+    -- Resonance (HP <= 80%, not during rift attacks)
+    if isAbilityOffCooldown(Data.extraAbilities.resonanceAbility)
     and State.currentState ~= Data.bossStateEnum.TEAR_RIFT_ATTACK_COMMENCE.name
     and State.currentState ~= Data.bossStateEnum.TEAR_RIFT_ATTACK_MOVE.name
     and API.GetHPrecent() <= 80 then
         self:UseResonanceAbility()
         State.isResonanceEnabled = true
-        return
+        return true
     end
 
-    if State.necrosisStacks > 5 
-    and not API.Buffbar_GetIDstatus(Data.deathSparkReady).found
-    and not State.isPhasing then
-        if (State.kerapacPhase == 3 and not State.islightningPhase) or (State.kerapacPhase ~= 3) then
-            self:UseFingerOfDeathAbility()
-            return
+    -- Preparation (when resonance is on cooldown)
+    local resAB = Data.extraAbilities.resonanceAbility.AB
+    local prepAB = Data.extraAbilities.preparationAbility.AB
+    if resAB and (resAB.cooldown_timer or 0) > 0
+    and prepAB and prepAB.enabled and (prepAB.cooldown_timer or 999) <= 0 then
+        self:UsePreparationAbility()
+        return true
+    end
+
+    return false
+end
+
+local function canUseOffensiveAbility()
+    if State.isPhasing then return false end
+    if State.kerapacPhase == 3 and State.islightningPhase then return false end
+    return true
+end
+
+function KerapacCombat:CastOffensiveAbility(timeWarpActionButton)
+    -- Conjures (always priority)
+    if isAbilityReady(Data.extraAbilities.conjureUndeadArmyAbility)
+    and API.VB_FindPSettinOrder(10994).state < 1
+    and API.VB_FindPSettinOrder(11018).state < 1
+    and API.VB_FindPSettinOrder(11006).state < 1 then
+        self:UseConjureUndeadArmy()
+        return true
+    end
+
+    if isAbilityReady(Data.extraAbilities.conjureSkeletonWarriorAbility)
+    and API.VB_FindPSettinOrder(10994).state < 1 then
+        self:UseConjureSkeletonWarrior()
+        return true
+    end
+
+    if isAbilityReady(Data.extraAbilities.conjureVengefulGhostAbility)
+    and API.VB_FindPSettinOrder(11018).state < 1 then
+        self:UseConjureVengefulGhost()
+        return true
+    end
+
+    if isAbilityReady(Data.extraAbilities.conjurePutridZombieAbility)
+    and API.VB_FindPSettinOrder(11006).state < 1 then
+        self:UseConjurePutridZombie()
+        return true
+    end
+
+    -- Darkness
+    if isAbilityOffCooldown(Data.extraAbilities.darknessAbility)
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.darknessAbility.buffId).found
+    and State.hasDarkness then
+        self:UseDarknessAbility()
+        return true
+    end
+
+    -- Invoke Death
+    if isAbilityOffCooldown(Data.extraAbilities.invokeDeathAbility)
+    and not self:HasDeathInvocation()
+    and not self:HasMarkOfDeath()
+    and State.hasInvokeDeath then
+        self:UseInvokeDeathAbility()
+        return true
+    end
+
+    -- Split Soul
+    if State.kerapacPhase < 4
+    and isAbilityOffCooldown(Data.extraAbilities.splitSoulAbility)
+    and Data.extraAbilities.splitSoulAbility.AB and Data.extraAbilities.splitSoulAbility.AB.id and Data.extraAbilities.splitSoulAbility.AB.id > 0
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.devotionAbility.buffId).found
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.splitSoulAbility.buffId).found then
+        self:UseSplitSoulAbility()
+        return true
+    end
+
+    -- Commands
+    if isAbilityOffCooldown(Data.extraAbilities.commandSkeletonWarriorAbility) then
+        self:UseCommandSkeletonWarrior()
+        return true
+    end
+
+    if isAbilityOffCooldown(Data.extraAbilities.commandVengefulGhostAbility) then
+        self:UseCommandVengefulGhost()
+        return true
+    end
+
+    if not canUseOffensiveAbility() then
+        return false
+    end
+
+    -- Death Guard / EOF spec with high necrosis
+    if not API.DeBuffbar_GetIDstatus(55524).found
+    and State.necrosisStacks > 11
+    and API.GetAddreline_() >= 25 then
+        if State.hasDeathGuardEquipped and API.GetABs_name1("Weapon Special Attack").enabled then
+            self:UseSpecialAttackAbility()
+            return true
+        elseif API.GetABs_name1("Essence of Finality").enabled then
+            self:UseEssenceOfFinalityAbility()
+            return true
         end
     end
 
-    if State.residualSoulsStack > 2 
-    and Data.extraAbilities.volleyOfSoulsAbility.AB.enabled 
-    and not API.Buffbar_GetIDstatus(Data.deathSparkReady).found
-    and not State.isPhasing then
-        if (State.kerapacPhase == 3 and not State.islightningPhase) or (State.kerapacPhase ~= 3) then
-            self:UseVolleyOfSoulsAbility()
-            return
+    -- Finger of Death (high necrosis)
+    if State.necrosisStacks > 11
+    and not API.Buffbar_GetIDstatus(Data.deathSparkReady).found then
+        self:UseFingerOfDeathAbility()
+        return true
+    end
+
+    -- Volley of Souls (high stacks)
+    if State.residualSoulsStack > State.residualSoulsMax
+    and not API.Buffbar_GetIDstatus(Data.deathSparkReady).found then
+        self:UseVolleyOfSoulsAbility()
+        return true
+    end
+
+    -- Death Skulls
+    if isAbilityOffCooldown(Data.extraAbilities.deathSkullsAbility)
+    and API.GetAddreline_() >= Data.extraAbilities.deathSkullsAbility.threshold
+    and not API.Buffbar_GetIDstatus(Data.deathSparkReady).found then
+        self:UseWarpTimeIfAvailable(timeWarpActionButton)
+        self:UseDeathSkullsAbility()
+        Utils:SleepTickRandom(1)
+        Utils:DrinkAdrenalinePotion()
+        return true
+    end
+
+    -- Living Death
+    if isAbilityOffCooldown(Data.extraAbilities.livingDeathAbility)
+    and API.GetAddreline_() >= Data.extraAbilities.livingDeathAbility.threshold
+    and not API.Buffbar_GetIDstatus(Data.extraAbilities.livingDeathAbility.buffId).found then
+        self:UseWarpTimeIfAvailable(timeWarpActionButton)
+        self:UseLivingDeathAbility()
+        Utils:SleepTickRandom(1)
+        Utils:DrinkAdrenalinePotion()
+        return true
+    end
+
+    -- Omni Guard / EOF spec
+    if not API.Buffbar_GetIDstatus(55480).found
+    and not API.DeBuffbar_GetIDstatus(55480).found
+    and API.GetAddreline_() >= 30 then
+        if State.hasOmniGuardEquipped and API.GetABs_name1("Weapon Special Attack").enabled then
+            self:UseSpecialAttackAbility()
+            return true
+        elseif API.GetABs_name1("Essence of Finality").enabled then
+            self:UseEssenceOfFinalityAbility()
+            return true
         end
     end
 
-    if Data.extraAbilities.bloatAbility.AB.cooldown_timer <= 0 
-    and Data.extraAbilities.bloatAbility.AB.enabled 
-    and API.GetAddreline_() >= Data.extraAbilities.bloatAbility.threshold 
-    and not API.Buffbar_GetIDstatus(Data.deathSparkReady).found
-    and not State.hasBloatDebuff then
-        if (State.kerapacPhase == 3 and not State.islightningPhase) or (State.kerapacPhase ~= 3) then
-            self:UseBloatAbility()
-            return
-        end
+    -- Finger of Death (medium necrosis)
+    if State.necrosisStacks > 5
+    and API.DeBuffbar_GetIDstatus(55524).found
+    and not API.Buffbar_GetIDstatus(Data.deathSparkReady).found then
+        self:UseFingerOfDeathAbility()
+        return true
     end
 
-    if Data.extraAbilities.touchOfDeathAbility.AB.cooldown_timer <= 0
-    and Data.extraAbilities.touchOfDeathAbility.AB.enabled 
+    -- Bloat
+    if isAbilityOffCooldown(Data.extraAbilities.bloatAbility)
+    and API.GetAddreline_() >= Data.extraAbilities.bloatAbility.threshold
+    and not API.Buffbar_GetIDstatus(Data.deathSparkReady).found
+    and not API.TargetHasBuff("Bloat") then
+        self:UseBloatAbility()
+        return true
+    end
+
+    -- Touch of Death
+    if isAbilityOffCooldown(Data.extraAbilities.touchOfDeathAbility)
     and not API.Buffbar_GetIDstatus(Data.deathSparkReady).found then
         self:UseTouchOfDeathAbility()
-        return
+        return true
     end
 
-    if Data.extraAbilities.soulSapAbility.AB.cooldown_timer <= 0
-    and Data.extraAbilities.soulSapAbility.AB.enabled 
+    -- Soul Sap
+    if isAbilityOffCooldown(Data.extraAbilities.soulSapAbility)
     and not API.Buffbar_GetIDstatus(Data.deathSparkReady).found then
         self:UseSoulSapAbility()
-        return
+        return true
     end
 
-    if Data.extraAbilities.sacrificeAbility.AB.cooldown_timer <= 0 
-    and Data.extraAbilities.sacrificeAbility.AB.enabled 
-    and not API.Buffbar_GetIDstatus(Data.deathSparkReady).found
-    and not State.isPhasing then
+    -- Sacrifice
+    if isAbilityOffCooldown(Data.extraAbilities.sacrificeAbility)
+    and not API.Buffbar_GetIDstatus(Data.deathSparkReady).found then
         self:UseSacrificeAbility()
+        return true
+    end
+
+    return false
+end
+
+function KerapacCombat:CastNextAbility()
+    self:InitAbilities()
+
+    local currentTick = API.Get_tick()
+    local tickDiff = currentTick - State.globalCooldownTicks
+
+    local timeWarpActionButton = API.ScanForInterfaceTest2Get(false, { { 743,0,-1,0 }, { 743,1,-1,0 } })[1].textitem == "<col=FFFFFF>Warp time"
+
+    if tickDiff <= 2 then
+        Logger:Debug("CastNextAbility: GCD active (tickDiff=" .. tickDiff .. ", current=" .. currentTick .. ", last=" .. State.globalCooldownTicks .. ")")
         return
     end
 
-    if Data.extraAbilities.resonanceAbility.AB.cooldown_timer > 0
-    and Data.extraAbilities.preparationAbility.AB.enabled 
-    and Data.extraAbilities.preparationAbility.AB.cooldown_timer <= 0 then
-        self:UsePreparationAbility()
+    if not State.canAttack then
+        Logger:Debug("CastNextAbility: canAttack is false")
+        return
+    end
+
+    Logger:Debug("CastNextAbility: Executing rotation (tick: " .. currentTick .. ", canAttack: " .. tostring(State.canAttack) .. ")")
+
+    State.hasBloatDebuff = self:CheckForBloatOnTarget()
+    State.necrosisStacks = API.VB_FindPSettinOrder(10986).state
+    State.residualSoulsStack = API.VB_FindPSettinOrder(11035).state
+    State.globalCooldownTicks = currentTick
+
+    self:CheckForSplitSoul()
+    Utils:handleTimeWarpBuff()
+
+    if (State.kerapacPhase >= 4 or State.islightningPhase) then
+        if self:CastDefensiveAbility(timeWarpActionButton) then
+            return
+        end
+    end
+
+    if self:CastOffensiveAbility(timeWarpActionButton) then
         return
     end
 
@@ -1175,11 +1011,13 @@ function KerapacCombat:CastNextAbility()
 end
 
 function KerapacCombat:ManagePlayer()
+    if State.kerapacPhase == 4 then
+        
+    end
     self:CastNextAbility()
     self:HandleResonance()
     self:EnablePassivePrayer()
     self:ApplyVulnerability()
-    --Utils:HandleSpecialSummoning()
     Utils:EatFood()
     Utils:DrinkPrayer()
     self:EnablePassivePrayer()
