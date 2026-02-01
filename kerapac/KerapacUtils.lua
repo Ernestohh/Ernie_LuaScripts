@@ -102,16 +102,220 @@ function KerapacUtils:WhichAdrenalinePotion()
 end
 
 function KerapacUtils:WhichFamiliar()
-    local familiar = ""
-    local foundFamiliar = false
+    local familiars = {}
     for i = 1, #Data.summoningPouches do
-        foundFamiliar = Inventory:Contains(Data.summoningPouches[i])
-        if foundFamiliar then
-            familiar = Data.summoningPouches[i]
-            break
+        if Inventory:Contains(Data.summoningPouches[i]) then
+            table.insert(familiars, Data.summoningPouches[i])
         end
     end
-    return familiar
+    return familiars
+end
+
+function KerapacUtils:WhichRunes()
+    local runes = {}
+    for i = 1, #Data.runeNames do
+        if Inventory:Contains(Data.runeNames[i]) then
+            table.insert(runes, Data.runeNames[i])
+        end
+    end
+    return runes
+end
+
+function KerapacUtils:WhichRunePouches()
+    local pouches = {}
+    for i = 1, #Data.runePouches do
+        if Inventory:Contains(Data.runePouches[i]) then
+            table.insert(pouches, Data.runePouches[i])
+        end
+    end
+    return pouches
+end
+
+function KerapacUtils:GetRunePouchInventoryIds()
+    local pouches = {}
+    local invItems = API.ReadInvArrays33()
+
+    for _, item in ipairs(invItems) do
+        if item.itemid1 > 0 and item.textitem and not item.noteditem and not item.itemid1_tradable then
+            local itemName = string.lower(item.textitem)
+            for _, pouchName in ipairs(Data.runePouches) do
+                if string.find(itemName, string.lower(pouchName)) then
+                    Logger:Info("Found pouch: " .. pouchName .. " with ID " .. item.itemid1)
+                    table.insert(pouches, {name = pouchName, id = item.itemid1})
+                    break
+                end
+            end
+        end
+    end
+
+    return pouches
+end
+
+local runeIdToNameMap = {
+    [1] = "Air rune", [2] = "Water rune", [3] = "Earth rune", [4] = "Fire rune",
+    [5] = "Dust rune", [6] = "Lava rune", [7] = "Mist rune", [8] = "Mud rune",
+    [9] = "Smoke rune", [10] = "Steam rune", [11] = "Mind rune", [12] = "Body rune",
+    [13] = "Cosmic rune", [14] = "Chaos rune", [15] = "Nature rune", [16] = "Law rune",
+    [17] = "Death rune", [18] = "Astral rune", [19] = "Blood rune", [20] = "Soul rune",
+    [22] = "Time rune"
+}
+
+function KerapacUtils:RuneIdToName(runeId)
+    return runeIdToNameMap[runeId] or nil
+end
+
+function KerapacUtils:GetRunePouchContents(pouchItemId)
+    local contents = {}
+    local containerData = API.Container_Get_s(93, pouchItemId)
+
+    if not containerData or not containerData.Extra_ints then
+        Logger:Info("No container data for pouch " .. pouchItemId)
+        return contents
+    end
+
+    local extraInts = containerData.Extra_ints
+    local runeIds = extraInts[4] or 0
+    local quantity01 = extraInts[2] or 0
+    local quantity23 = extraInts[6] or 0
+
+    Logger:Info("Pouch " .. pouchItemId .. " raw: [3]=" .. runeIds .. " [1]=" .. quantity01 .. " [5]=" .. quantity23)
+
+    local slot1RuneId = runeIds % 64
+    local slot2RuneId = math.floor(runeIds / 64) % 64
+    local slot3RuneId = math.floor(runeIds / 4096) % 64
+    local slot4RuneId = math.floor(runeIds / 262144) % 64
+
+    local slot1Quantity = quantity01 % 65536
+    local slot2Quantity = math.floor(quantity01 / 65536) * 2
+    local slot3Quantity = quantity23 % 65536
+    local slot4Quantity = math.floor(quantity23 / 65536)
+
+    if slot1RuneId > 0 then
+        local runeName = self:RuneIdToName(slot1RuneId)
+        if runeName then contents[runeName] = slot1Quantity end
+    end
+
+    if slot2RuneId > 0 then
+        local runeName = self:RuneIdToName(slot2RuneId)
+        if runeName then contents[runeName] = slot2Quantity end
+    end
+
+    if slot3RuneId > 0 then
+        local runeName = self:RuneIdToName(slot3RuneId)
+        if runeName then contents[runeName] = slot3Quantity end
+    end
+
+    if slot4RuneId > 0 then
+        local runeName = self:RuneIdToName(slot4RuneId)
+        if runeName then contents[runeName] = slot4Quantity end
+    end
+
+    return contents
+end
+
+function KerapacUtils:GetRunesNeedingRefillInPouch(pouchItemId, threshold)
+    threshold = threshold or 1000
+    local runesNeedingRefill = {}
+    local contents = self:GetRunePouchContents(pouchItemId)
+
+    for runeName, quantity in pairs(contents) do
+        if quantity < threshold then
+            table.insert(runesNeedingRefill, {name = runeName, count = quantity})
+        end
+    end
+
+    return runesNeedingRefill
+end
+
+function KerapacUtils:WhichSummoningScrolls()
+    local scrolls = {}
+    for i = 1, #Data.summoningScrolls do
+        if Inventory:Contains(Data.summoningScrolls[i]) then
+            table.insert(scrolls, Data.summoningScrolls[i])
+        end
+    end
+    return scrolls
+end
+
+function KerapacUtils:WhichScriptures()
+    local scriptures = {}
+    for i = 1, #Data.scriptures do
+        if Inventory:Contains(Data.scriptures[i]) then
+            table.insert(scriptures, Data.scriptures[i])
+        end
+    end
+    return scriptures
+end
+
+function KerapacUtils:GetScriptureInventoryIds()
+    local scriptures = {}
+    local invItems = API.ReadInvArrays33()
+
+    for _, item in ipairs(invItems) do
+        if item.itemid1 > 0 and item.textitem and not item.noteditem and not item.itemid1_tradable then
+            local itemName = string.lower(item.textitem)
+            for _, scriptureName in ipairs(Data.scriptures) do
+                if string.find(itemName, string.lower(scriptureName)) then
+                    Logger:Info("Found scripture: " .. scriptureName .. " with ID " .. item.itemid1)
+                    table.insert(scriptures, {name = scriptureName, id = item.itemid1})
+                    break
+                end
+            end
+        end
+    end
+
+    return scriptures
+end
+
+function KerapacUtils:WhichScripturePages()
+    local pages = {}
+    for i = 1, #Data.scripturePages do
+        if Inventory:Contains(Data.scripturePages[i]) then
+            table.insert(pages, Data.scripturePages[i])
+        end
+    end
+    return pages
+end
+
+function KerapacUtils:GetScripturePageName(scriptureName)
+    for i = 1, #Data.scriptures do
+        if Data.scriptures[i] == scriptureName then
+            return Data.scripturePages[i]
+        end
+    end
+    return nil
+end
+
+function KerapacUtils:GetScriptureSecondsRemaining(scriptureId)
+    local containerData = API.Container_Get_s(93, scriptureId)
+    if containerData and containerData.Extra_ints and containerData.Extra_ints[2] then
+        local seconds = (containerData.Extra_ints[2] - 2) * 0.3
+        return seconds
+    end
+    return 0
+end
+
+function KerapacUtils:RuneNeedsRefill(runeName, threshold)
+    threshold = threshold or 1000
+    local varbits = Data.runeVarbits[runeName]
+    if not varbits then
+        return false
+    end
+
+    local inventoryCount = Inventory:InvItemcountStack_Strings(runeName)
+    if inventoryCount == 0 then
+        return false
+    end
+
+    for _, varbitId in ipairs(varbits) do
+        local pouchCount = API.GetVarbitValue(varbitId)
+        if pouchCount - inventoryCount < threshold then
+            Logger:Debug(runeName .. " needs refill: pouch=" .. pouchCount .. " inv=" .. inventoryCount)
+            return true
+        end
+    end
+
+    return false
 end
 
 function KerapacUtils:IsFamiliarHpBelowPercentage(hpString, percentage)
@@ -354,6 +558,10 @@ function KerapacUtils:CheckForScripture()
     end
     if API.Container_Get_s(94, Data.extraBuffs.scriptureOfAmascut.itemId).item_id > 0 then
         State.scripture = Data.extraBuffs.scriptureOfAmascut
+        State.isScriptureEquipped = true
+    end
+    if API.Container_Get_s(94, Data.extraBuffs.grimoire.itemId).item_id > 0 then
+        State.scripture = Data.extraBuffs.grimoire
         State.isScriptureEquipped = true
     end
 end
@@ -602,27 +810,29 @@ end
 
 function KerapacUtils:SummonFamiliar()
     if not Familiars:HasFamiliar() and Inventory:ContainsAny(Data.summoningPouches) then
-        Logger:Info("Summoning familiar " .. self:WhichFamiliar())
-        Inventory:DoAction(self:WhichFamiliar(), 1, API.OFF_ACT_GeneralInterface_route)
-        State.isFamiliarSummoned = true
-        self:SleepTickRandom(1)
+        local familiars = self:WhichFamiliar()
+        if #familiars > 0 then
+            Logger:Info("Summoning familiar " .. familiars[1])
+            Inventory:DoAction(familiars[1], 1, API.OFF_ACT_GeneralInterface_route)
+            State.isFamiliarSummoned = true
+            self:SleepTickRandom(1)
+        end
     else
         Logger:Debug("familiar is summoned or pouch in inventory")
     end
 end
 
 function KerapacUtils:RenewFamiliar()
-    if API.Buffbar_GetIDstatus(26095).found then
-        local timeRemaining = tonumber(string.match(API.Buffbar_GetIDstatus(26095).text, "(-?%d+%.?%d*)"))
-        if timeRemaining ~=nil then
-            if timeRemaining <= 1 then
-                if Familiars:HasFamiliar() then
-                    if(Inventory:ContainsAny(Data.summoningPouches)) then
-                        API.DoAction_Interface(0xffffffff,0xffffffff,1,662,53,-1,API.OFF_ACT_GeneralInterface_route)
-                        self:SleepTickRandom(1)
-                        Logger:Info("Renewing familiar")
-                    end
-                end
+    if not Familiars:HasFamiliar() then return end
+    local timeRemaining = API.GetVarbitValue(6055)
+    if timeRemaining <= 1 then
+        for _, pouchName in ipairs(Data.summoningPouches) do
+            if Inventory:Contains(pouchName) then
+                local pouchId = Item:Get(pouchName).id
+                API.DoAction_Inventory1(pouchId, 0, 1, API.OFF_ACT_GeneralInterface_route)
+                self:SleepTickRandom(1)
+                Logger:Info("Renewing familiar with " .. pouchName .. " (time left: " .. timeRemaining .. "m)")
+                return
             end
         end
     end

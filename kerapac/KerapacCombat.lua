@@ -103,6 +103,92 @@ function KerapacCombat:CheckForBloatOnTarget()
     return API.TargetHasBuff("Bloat")
 end
 
+function KerapacCombat:CheckForSmokeCloudOnTarget()
+    return API.TargetHasBuff(Data.extraBuffs.smokeCloud.targetBuffId)
+end
+
+function KerapacCombat:UseSmokeCloud()
+    if not Data.extraBuffSmokeCloud then return end
+    if self:CheckForSmokeCloudOnTarget() then return end
+    if not Data.extraBuffs.smokeCloud.AB or not Data.extraBuffs.smokeCloud.AB.enabled then return end
+    API.DoAction_Ability_Direct(Data.extraBuffs.smokeCloud.AB, 1, API.OFF_ACT_GeneralInterface_route)
+    Logger:Info("Casting Smoke Cloud")
+end
+
+function KerapacCombat:UsePowderOfPenance()
+    if not Data.extraBuffPowderOfPenance then return end
+    if API.Buffbar_GetIDstatus(Data.extraBuffs.powderOfPenance.buffId).found then return end
+    if not Data.extraBuffs.powderOfPenance.AB or not Data.extraBuffs.powderOfPenance.AB.enabled then return end
+    API.DoAction_Ability_Direct(Data.extraBuffs.powderOfPenance.AB, 1, API.OFF_ACT_GeneralInterface_route)
+    Logger:Info("Using Powder of Penance")
+end
+
+function KerapacCombat:UsePrismOfRestoration()
+    if not Data.extraBuffPrismOfRestoration then return end
+    if not Familiars:HasFamiliar() then return end
+    if not Data.extraBuffs.prismOfRestoration.AB or not Data.extraBuffs.prismOfRestoration.AB.enabled then return end
+    local familiarHp = API.GetVarbitValue(19034)
+    local familiarTimeLeft = API.GetVarbitValue(6055)
+    if familiarHp >= Data.extraBuffPrismHpThreshold then return end
+    if familiarTimeLeft <= 1 then return end
+    API.DoAction_Ability_Direct(Data.extraBuffs.prismOfRestoration.AB, 1, API.OFF_ACT_GeneralInterface_route)
+    Logger:Info("Casting Prism of Restoration (familiar HP: " .. familiarHp .. ", time left: " .. familiarTimeLeft .. "m)")
+end
+
+function KerapacCombat:UseCastFamiliarSpecial()
+    if not Data.prebuffSummoning then return end
+    if not Data.prebuffSummoningPouch then return end
+    if not Familiars:HasFamiliar() then return end
+
+    local pouch = Data.prebuffSummoningPouch
+    local specialPoints = API.GetVarbitValue(26474)
+
+    if string.find(pouch, "kal'gerion") then
+        if not Data.extraBuffs.castFamiliarSpecial.AB or not Data.extraBuffs.castFamiliarSpecial.AB.enabled then return end
+        if API.Buffbar_GetIDstatus(49416).found then return end
+        if specialPoints < 30 then return end
+        API.DoAction_Ability_Direct(Data.extraBuffs.castFamiliarSpecial.AB, 1, API.OFF_ACT_GeneralInterface_route)
+        Logger:Info("Casting Kal'gerion Special (points: " .. specialPoints .. ")")
+        return
+    end
+
+    if string.find(pouch, "hellhound") then
+        if not Data.extraBuffs.castFamiliarSpecial.AB or not Data.extraBuffs.castFamiliarSpecial.AB.enabled then return end
+        local familiarHp = API.GetVarbitValue(19034)
+        if familiarHp >= 5000 then return end
+        if specialPoints < 20 then return end
+        API.DoAction_Ability_Direct(Data.extraBuffs.castFamiliarSpecial.AB, 1, API.OFF_ACT_GeneralInterface_route)
+        Logger:Info("Casting Hellhound Special (HP: " .. familiarHp .. ", points: " .. specialPoints .. ")")
+        return
+    end
+end
+
+function KerapacCombat:UseSpiritualPrayerPotion()
+    if not Data.prebuffSummoning then return end
+    if not Data.prebuffSummoningPouch then return end
+    if not Familiars:HasFamiliar() then return end
+
+    local pouch = Data.prebuffSummoningPouch
+    local specialPoints = API.GetVarbitValue(26474)
+
+    local threshold = nil
+    if string.find(pouch, "ripper") then
+        if State.kerapacPhase < 3 then return end
+        threshold = 20
+    elseif string.find(pouch, "blood reaver") then
+        threshold = 15
+    else
+        return
+    end
+
+    if specialPoints >= threshold then return end
+
+    if not Data.extraBuffs.spiritualPrayerPotion.AB or not Data.extraBuffs.spiritualPrayerPotion.AB.enabled then return end
+
+    API.DoAction_Ability_Direct(Data.extraBuffs.spiritualPrayerPotion.AB, 1, API.OFF_ACT_GeneralInterface_route)
+    Logger:Info("Drinking Spiritual Prayer Potion (points: " .. specialPoints .. ", threshold: " .. threshold .. ")")
+end
+
 function KerapacCombat:CheckForSplitSoul()
     if API.Buffbar_GetIDstatus(30126).found and not State.isSoulSplitEnabled then
         self:EnableSoulSplit()
@@ -254,7 +340,11 @@ function KerapacCombat:EnablePassivePrayer()
     if State.selectedPassive == Data.passiveBuffs.None.name then
         return
     end
-    
+
+    if State.isPassivePrayerEnabled then
+        return
+    end
+
     local selectedPassiveKey = nil
     for key, data in pairs(Data.passiveBuffs) do
         if data.name == State.selectedPassive then
@@ -262,15 +352,16 @@ function KerapacCombat:EnablePassivePrayer()
             break
         end
     end
-    
+
     local selectedPassiveData = Data.passiveBuffs[selectedPassiveKey]
     if selectedPassiveData then
         local buffId = selectedPassiveData.buffId
         local ability = selectedPassiveData.AB
-        
+
         if not API.Buffbar_GetIDstatus(buffId).found and ability.id ~= 0 and API.GetPrayPrecent() > 0 then
             Logger:Info("Activate " .. State.selectedPassive)
             API.DoAction_Ability_Direct(ability, 1, API.OFF_ACT_GeneralInterface_route)
+            State.isPassivePrayerEnabled = true
             Utils:SleepTickRandom(2)
         end
     else
@@ -286,15 +377,16 @@ function KerapacCombat:DisablePassivePrayer()
             break
         end
     end
-    
+
     local selectedPassiveData = Data.passiveBuffs[selectedPassiveKey]
     if selectedPassiveData then
         local buffId = selectedPassiveData.buffId
         local ability = selectedPassiveData.AB
-        
+
         if API.Buffbar_GetIDstatus(buffId).found and ability.id ~= 0 then
             Logger:Info("Deactivate " .. State.selectedPassive)
             API.DoAction_Ability_Direct(ability, 1, API.OFF_ACT_GeneralInterface_route)
+            State.isPassivePrayerEnabled = false
         end
     else
         Logger:Error("No valid passive prayer selected or data not found.")
@@ -324,18 +416,31 @@ function KerapacCombat:AttackKerapac()
 end
 
 function KerapacCombat:ManageBuffs()
-    if API.Get_tick() - State.buffCheckCooldown <= 4 then return end
+    if API.Get_tick() - State.buffCheckCooldown <= 3 then return end
 
     if State.hasOverload then
         Utils:DrinkOverload()
     end
-    
+
     if State.hasWeaponPoison then
         Utils:DrinkWeaponPoison()
     end
 
     if State.isScriptureEquipped and not State.hasScriptureBuff then
         self:EnableScripture(State.scripture)
+    end
+
+    if Data.extraBuffPrismOfRestoration then
+        self:UsePrismOfRestoration()
+    end
+
+    if Data.extraBuffPowderOfPenance then
+        self:UsePowderOfPenance()
+    end
+
+    if Data.prebuffSummoning then
+        self:UseCastFamiliarSpecial()
+        self:UseSpiritualPrayerPotion()
     end
 
     State.buffCheckCooldown = API.Get_tick()
@@ -824,6 +929,12 @@ function KerapacCombat:CastOffensiveAbility(timeWarpActionButton)
         return true
     end
 
+    -- Smoke Cloud
+    if Data.extraBuffSmokeCloud and not self:CheckForSmokeCloudOnTarget() then
+        self:UseSmokeCloud()
+        return true
+    end
+
     -- Darkness
     if isAbilityOffCooldown(Data.extraAbilities.darknessAbility)
     and not API.Buffbar_GetIDstatus(Data.extraAbilities.darknessAbility.buffId).found
@@ -1020,7 +1131,6 @@ function KerapacCombat:ManagePlayer()
     self:ApplyVulnerability()
     Utils:EatFood()
     Utils:DrinkPrayer()
-    self:EnablePassivePrayer()
     Utils:RenewFamiliar()
     self:CheckForStun()
     State:CheckPlayerDeath()

@@ -73,6 +73,16 @@ KerapacGUI.config = {
     prebuffWarsBonfire = false,
     prebuffThermalFlask = false,
     prebuffDivineCharges = false,
+    prebuffSummoning = false,
+    prebuffSummoningPouchIndex = 0,
+    prebuffUseScroll = false,
+    prebuffAutofireRate = 1,
+    prebuffRefillRunePouches = false,
+    prebuffRefillScriptures = false,
+    extraBuffSmokeCloud = false,
+    extraBuffPrismOfRestoration = false,
+    extraBuffPrismHpThreshold = 5000,
+    extraBuffPowderOfPenance = false,
 }
 
 local function buildConfigData(cfg)
@@ -99,6 +109,16 @@ local function buildConfigData(cfg)
         PrebuffWarsBonfire = cfg.prebuffWarsBonfire,
         PrebuffThermalFlask = cfg.prebuffThermalFlask,
         PrebuffDivineCharges = cfg.prebuffDivineCharges,
+        PrebuffSummoning = cfg.prebuffSummoning,
+        PrebuffSummoningPouchIndex = cfg.prebuffSummoningPouchIndex,
+        PrebuffUseScroll = cfg.prebuffUseScroll,
+        PrebuffAutofireRate = cfg.prebuffAutofireRate,
+        PrebuffRefillRunePouches = cfg.prebuffRefillRunePouches,
+        PrebuffRefillScriptures = cfg.prebuffRefillScriptures,
+        ExtraBuffSmokeCloud = cfg.extraBuffSmokeCloud,
+        ExtraBuffPrismOfRestoration = cfg.extraBuffPrismOfRestoration,
+        ExtraBuffPrismHpThreshold = cfg.extraBuffPrismHpThreshold,
+        ExtraBuffPowderOfPenance = cfg.extraBuffPowderOfPenance,
     }
 end
 
@@ -255,6 +275,16 @@ applyConfigData = function(saved, c)
     if type(saved.PrebuffWarsBonfire) == "boolean" then c.prebuffWarsBonfire = saved.PrebuffWarsBonfire end
     if type(saved.PrebuffThermalFlask) == "boolean" then c.prebuffThermalFlask = saved.PrebuffThermalFlask end
     if type(saved.PrebuffDivineCharges) == "boolean" then c.prebuffDivineCharges = saved.PrebuffDivineCharges end
+    if type(saved.PrebuffSummoning) == "boolean" then c.prebuffSummoning = saved.PrebuffSummoning end
+    if type(saved.PrebuffSummoningPouchIndex) == "number" then c.prebuffSummoningPouchIndex = saved.PrebuffSummoningPouchIndex end
+    if type(saved.PrebuffUseScroll) == "boolean" then c.prebuffUseScroll = saved.PrebuffUseScroll end
+    if type(saved.PrebuffAutofireRate) == "number" then c.prebuffAutofireRate = math.max(0, math.min(15, saved.PrebuffAutofireRate)) end
+    if type(saved.PrebuffRefillRunePouches) == "boolean" then c.prebuffRefillRunePouches = saved.PrebuffRefillRunePouches end
+    if type(saved.PrebuffRefillScriptures) == "boolean" then c.prebuffRefillScriptures = saved.PrebuffRefillScriptures end
+    if type(saved.ExtraBuffSmokeCloud) == "boolean" then c.extraBuffSmokeCloud = saved.ExtraBuffSmokeCloud end
+    if type(saved.ExtraBuffPrismOfRestoration) == "boolean" then c.extraBuffPrismOfRestoration = saved.ExtraBuffPrismOfRestoration end
+    if type(saved.ExtraBuffPrismHpThreshold) == "number" then c.extraBuffPrismHpThreshold = math.max(1000, math.min(12000, saved.ExtraBuffPrismHpThreshold)) end
+    if type(saved.ExtraBuffPowderOfPenance) == "boolean" then c.extraBuffPowderOfPenance = saved.ExtraBuffPowderOfPenance end
 end
 
 function KerapacGUI.loadConfig()
@@ -293,6 +323,16 @@ function KerapacGUI.getConfig()
         prebuffWarsBonfire = c.prebuffWarsBonfire,
         prebuffThermalFlask = c.prebuffThermalFlask,
         prebuffDivineCharges = c.prebuffDivineCharges,
+        prebuffSummoning = c.prebuffSummoning,
+        prebuffSummoningPouchIndex = c.prebuffSummoningPouchIndex,
+        prebuffUseScroll = c.prebuffUseScroll,
+        prebuffAutofireRate = c.prebuffAutofireRate,
+        prebuffRefillRunePouches = c.prebuffRefillRunePouches,
+        prebuffRefillScriptures = c.prebuffRefillScriptures,
+        extraBuffSmokeCloud = c.extraBuffSmokeCloud,
+        extraBuffPrismOfRestoration = c.extraBuffPrismOfRestoration,
+        extraBuffPrismHpThreshold = c.extraBuffPrismHpThreshold,
+        extraBuffPowderOfPenance = c.extraBuffPowderOfPenance,
     }
 end
 
@@ -387,20 +427,150 @@ local function drawConfigTab(cfg, gui)
     ImGui.Separator()
     ImGui.Spacing()
 
-    ImGui.PushStyleColor(ImGuiCol.Text, 0.9, 0.7, 0.3, 1.0)
-    ImGui.TextWrapped("General Settings")
-    ImGui.PopStyleColor(1)
+    if ImGui.BeginTable("##settingsLayout", 2, 0) then
+        ImGui.TableSetupColumn("general", ImGuiTableColumnFlags.WidthStretch, 0.5)
+        ImGui.TableSetupColumn("prebuff", ImGuiTableColumnFlags.WidthStretch, 0.5)
 
-    ImGui.TextWrapped("Passive Prayer/Curse")
-    local passiveChanged, newPassiveIdx = ImGui.Combo("##passive", cfg.passiveIndex, passiveOptions, 10)
-    if passiveChanged then cfg.passiveIndex = newPassiveIdx end
+        ImGui.TableNextRow()
+        ImGui.TableNextColumn()
 
-    ImGui.Spacing()
-    local hmChanged, hmVal = ImGui.Checkbox("Hard Mode##hardmode", cfg.isHardMode)
-    if hmChanged then cfg.isHardMode = hmVal end
+        ImGui.PushStyleColor(ImGuiCol.Text, 0.9, 0.7, 0.3, 1.0)
+        ImGui.TextWrapped("General Settings")
+        ImGui.PopStyleColor(1)
 
-    local acChanged, acVal = ImGui.Checkbox("Adrenaline Crystal Unlocked##adrencrystal", cfg.hasAdrenalineCrystal)
-    if acChanged then cfg.hasAdrenalineCrystal = acVal end
+        ImGui.TextWrapped("Passive Prayer/Curse")
+        ImGui.PushItemWidth(-1)
+        local passiveChanged, newPassiveIdx = ImGui.Combo("##passive", cfg.passiveIndex, passiveOptions, 10)
+        if passiveChanged then cfg.passiveIndex = newPassiveIdx end
+        ImGui.PopItemWidth()
+
+        ImGui.Spacing()
+        local hmChanged, hmVal = ImGui.Checkbox("Hard Mode##hardmode", cfg.isHardMode)
+        if hmChanged then cfg.isHardMode = hmVal end
+
+        local acChanged, acVal = ImGui.Checkbox("Adrenaline Crystal##adrencrystal", cfg.hasAdrenalineCrystal)
+        if acChanged then cfg.hasAdrenalineCrystal = acVal end
+
+        ImGui.Spacing()
+        ImGui.PushStyleColor(ImGuiCol.Text, 0.5, 0.8, 0.9, 1.0)
+        ImGui.TextWrapped("Extra Buffs")
+        ImGui.PopStyleColor(1)
+
+        local smokeCloudChanged, smokeCloudVal = ImGui.Checkbox("Smoke Cloud##extrabuffsmokecloud", cfg.extraBuffSmokeCloud)
+        if smokeCloudChanged then cfg.extraBuffSmokeCloud = smokeCloudVal end
+
+        local prismChanged, prismVal = ImGui.Checkbox("Prism of Restoration##extrabuffprism", cfg.extraBuffPrismOfRestoration)
+        if prismChanged then cfg.extraBuffPrismOfRestoration = prismVal end
+
+        if cfg.extraBuffPrismOfRestoration then
+            ImGui.TextWrapped("Prism HP Threshold (1000-12000)")
+            ImGui.PushItemWidth(-1)
+            local prismHpChanged, prismHpVal = ImGui.InputInt("##prismhpthreshold", cfg.extraBuffPrismHpThreshold, 100, 500)
+            if prismHpChanged then
+                cfg.extraBuffPrismHpThreshold = prismHpVal
+            end
+            ImGui.PopItemWidth()
+        end
+
+        local powderChanged, powderVal = ImGui.Checkbox("Powder of Penance##extrabuffpowder", cfg.extraBuffPowderOfPenance)
+        if powderChanged then cfg.extraBuffPowderOfPenance = powderVal end
+
+        ImGui.TableNextColumn()
+
+        ImGui.PushStyleColor(ImGuiCol.Text, 0.9, 0.7, 0.3, 1.0)
+        ImGui.TextWrapped("Prebuff Settings")
+        ImGui.PopStyleColor(1)
+
+        local prebuffChanged, prebuffVal = ImGui.Checkbox("Enable Prebuffing##prebuffenabled", cfg.prebuffEnabled)
+        if prebuffChanged then cfg.prebuffEnabled = prebuffVal end
+
+        if cfg.prebuffEnabled then
+            ImGui.Spacing()
+
+            ImGui.TextWrapped("Main Preset (1-18)")
+            ImGui.PushItemWidth(-1)
+            local mainChanged, mainVal = ImGui.InputInt("##mainpreset", cfg.mainPreset, 1, 1)
+            if mainChanged then cfg.mainPreset = mainVal end
+            ImGui.PopItemWidth()
+
+            ImGui.TextWrapped("Prebuff Preset (1-18)")
+            ImGui.PushItemWidth(-1)
+            local prebuffPresetChanged, prebuffPresetVal = ImGui.InputInt("##prebuffpreset", cfg.prebuffPreset, 1, 1)
+            if prebuffPresetChanged then cfg.prebuffPreset = prebuffPresetVal end
+            ImGui.PopItemWidth()
+
+            ImGui.Spacing()
+
+            local summonChanged, summonVal = ImGui.Checkbox("Enable Summoning##prebuffsummon", cfg.prebuffSummoning)
+            if summonChanged then cfg.prebuffSummoning = summonVal end
+
+            if cfg.prebuffSummoning then
+                ImGui.TextWrapped("Summoning Pouch")
+                ImGui.PushItemWidth(-1)
+                local pouchChanged, pouchIdx = ImGui.Combo("##summoningpouch", cfg.prebuffSummoningPouchIndex, Data.summoningPouches, 10)
+                if pouchChanged then cfg.prebuffSummoningPouchIndex = pouchIdx end
+                ImGui.PopItemWidth()
+
+                local selectedPouch = cfg.prebuffSummoningPouchIndex >= 0 and Data.summoningPouches[cfg.prebuffSummoningPouchIndex + 1] or ""
+                if string.find(selectedPouch, "Binding contract") then
+                    local scrollChanged, scrollVal = ImGui.Checkbox("Use Scroll##prebuffusescroll", cfg.prebuffUseScroll)
+                    if scrollChanged then cfg.prebuffUseScroll = scrollVal end
+
+                    if cfg.prebuffUseScroll and not string.find(selectedPouch, "hellhound") and not string.find(selectedPouch, "kal'gerion") then
+                        ImGui.TextWrapped("Autofire Rate (0-15)")
+                        ImGui.PushItemWidth(-1)
+                        local autofireChanged, autofireVal = ImGui.InputInt("##prebuffautofire", cfg.prebuffAutofireRate, 1, 5)
+                        if autofireChanged then
+                            cfg.prebuffAutofireRate = autofireVal
+                        end
+                        ImGui.PopItemWidth()
+                    end
+                end
+            end
+
+            local refillRunesChanged, refillRunesVal = ImGui.Checkbox("Refill Rune Pouches##prebuffrefillrunes", cfg.prebuffRefillRunePouches)
+            if refillRunesChanged then cfg.prebuffRefillRunePouches = refillRunesVal end
+
+            local refillScripturesChanged, refillScripturesVal = ImGui.Checkbox("Refill Scriptures##prebuffrefillscriptures", cfg.prebuffRefillScriptures)
+            if refillScripturesChanged then cfg.prebuffRefillScriptures = refillScripturesVal end
+        end
+
+        ImGui.EndTable()
+    end
+
+    if cfg.prebuffEnabled then
+        ImGui.Spacing()
+        ImGui.Separator()
+        ImGui.Spacing()
+
+        ImGui.PushStyleColor(ImGuiCol.Text, 0.5, 0.8, 0.9, 1.0)
+        ImGui.TextWrapped("Prebuff Options:")
+        ImGui.PopStyleColor(1)
+
+        local kwuarmChanged, kwuarmVal = ImGui.Checkbox("Kwuarm Incense##prebuffkwuarm", cfg.prebuffKwuarm)
+        if kwuarmChanged then cfg.prebuffKwuarm = kwuarmVal end
+
+        ImGui.SameLine()
+
+        local lantadymeChanged, lantadymeVal = ImGui.Checkbox("Lantadyme Incense##prebufflantadyme", cfg.prebuffLantadyme)
+        if lantadymeChanged then cfg.prebuffLantadyme = lantadymeVal end
+
+        local spiritWeedChanged, spiritWeedVal = ImGui.Checkbox("Spirit Weed Incense##prebuffspiritweed", cfg.prebuffSpiritWeed)
+        if spiritWeedChanged then cfg.prebuffSpiritWeed = spiritWeedVal end
+
+        ImGui.SameLine()
+
+        local bonfireChanged, bonfireVal = ImGui.Checkbox("War's Bonfire##prebuffbonfire", cfg.prebuffWarsBonfire)
+        if bonfireChanged then cfg.prebuffWarsBonfire = bonfireVal end
+
+        local thermalChanged, thermalVal = ImGui.Checkbox("Thermal Flask##prebuffthermal", cfg.prebuffThermalFlask)
+        if thermalChanged then cfg.prebuffThermalFlask = thermalVal end
+
+        ImGui.SameLine()
+
+        local divineChanged, divineVal = ImGui.Checkbox("Divine Charges##prebuffdivine", cfg.prebuffDivineCharges)
+        if divineChanged then cfg.prebuffDivineCharges = divineVal end
+    end
 
     ImGui.Spacing()
     ImGui.Separator()
@@ -453,56 +623,6 @@ local function drawConfigTab(cfg, gui)
     ImGui.Spacing()
 
     ImGui.PushStyleColor(ImGuiCol.Text, 0.9, 0.7, 0.3, 1.0)
-    ImGui.TextWrapped("Prebuff Settings")
-    ImGui.PopStyleColor(1)
-
-    local prebuffChanged, prebuffVal = ImGui.Checkbox("Enable Prebuffing##prebuffenabled", cfg.prebuffEnabled)
-    if prebuffChanged then cfg.prebuffEnabled = prebuffVal end
-
-    if cfg.prebuffEnabled then
-        ImGui.Spacing()
-
-        ImGui.TextWrapped("Main Preset (1-18)")
-        local mainChanged, mainVal = ImGui.InputInt("##mainpreset", cfg.mainPreset, 1, 1)
-        if mainChanged then
-            cfg.mainPreset = mainVal
-        end
-
-        ImGui.TextWrapped("Prebuff Preset (1-18)")
-        local prebuffPresetChanged, prebuffPresetVal = ImGui.InputInt("##prebuffpreset", cfg.prebuffPreset, 1, 1)
-        if prebuffPresetChanged then
-            cfg.prebuffPreset = prebuffPresetVal
-        end
-
-        ImGui.Spacing()
-        ImGui.PushStyleColor(ImGuiCol.Text, 0.5, 0.8, 0.9, 1.0)
-        ImGui.TextWrapped("Prebuff Options:")
-        ImGui.PopStyleColor(1)
-
-        local kwuarmChanged, kwuarmVal = ImGui.Checkbox("Kwuarm Incense Stick##prebuffkwuarm", cfg.prebuffKwuarm)
-        if kwuarmChanged then cfg.prebuffKwuarm = kwuarmVal end
-
-        local lantadymeChanged, lantadymeVal = ImGui.Checkbox("Lantadyme Incense Stick##prebufflantadyme", cfg.prebuffLantadyme)
-        if lantadymeChanged then cfg.prebuffLantadyme = lantadymeVal end
-
-        local spiritWeedChanged, spiritWeedVal = ImGui.Checkbox("Spirit Weed Incense Stick##prebuffspiritweed", cfg.prebuffSpiritWeed)
-        if spiritWeedChanged then cfg.prebuffSpiritWeed = spiritWeedVal end
-
-        local bonfireChanged, bonfireVal = ImGui.Checkbox("War's Bonfire##prebuffbonfire", cfg.prebuffWarsBonfire)
-        if bonfireChanged then cfg.prebuffWarsBonfire = bonfireVal end
-
-        local thermalChanged, thermalVal = ImGui.Checkbox("Thermal Flask##prebuffthermal", cfg.prebuffThermalFlask)
-        if thermalChanged then cfg.prebuffThermalFlask = thermalVal end
-
-        local divineChanged, divineVal = ImGui.Checkbox("Divine Charges##prebuffdivine", cfg.prebuffDivineCharges)
-        if divineChanged then cfg.prebuffDivineCharges = divineVal end
-    end
-
-    ImGui.Spacing()
-    ImGui.Separator()
-    ImGui.Spacing()
-
-    ImGui.PushStyleColor(ImGuiCol.Text, 0.9, 0.7, 0.3, 1.0)
     ImGui.TextWrapped("Advanced Settings")
     ImGui.PopStyleColor(1)
 
@@ -540,6 +660,43 @@ local function drawConfigTab(cfg, gui)
         elseif main == prebuff then
             canStart = false
             errorMsg = "Main and Prebuff presets cannot be the same"
+        end
+
+        if canStart == true and cfg.prebuffSummoning == true and cfg.prebuffUseScroll == true then
+            local selectedPouch = cfg.prebuffSummoningPouchIndex >= 0 and Data.summoningPouches[cfg.prebuffSummoningPouchIndex + 1] or ""
+            if string.find(selectedPouch, "Binding contract") and not string.find(selectedPouch, "hellhound") and not string.find(selectedPouch, "kal'gerion") then
+                local autofire = tonumber(cfg.prebuffAutofireRate) or 0
+                if autofire < 0 or autofire > 15 then
+                    canStart = false
+                    errorMsg = "Autofire rate must be 0-15"
+                end
+            end
+        end
+    end
+
+    if canStart == true and cfg.extraBuffPrismOfRestoration == true then
+        local prismHp = tonumber(cfg.extraBuffPrismHpThreshold) or 0
+        if prismHp < 1000 or prismHp > 12000 then
+            canStart = false
+            errorMsg = "Prism HP threshold must be 1000-12000"
+        end
+    end
+
+    if canStart == true and API.GetVarbitValue(45682) ~= 1 then
+        canStart = false
+        errorMsg = "Altar of War is not unlocked"
+    end
+
+    if canStart == true and cfg.extraBuffSmokeCloud == true and API.GetVarbitValue(843) ~= 1 then
+        canStart = false
+        errorMsg = "Not on Ancient spellbook (required for Smoke Cloud)"
+    end
+
+    if canStart == true and cfg.prebuffEnabled == true and cfg.prebuffSummoning == true then
+        local summoningVb = API.VB_FindPSett(3102).state
+        if summoningVb == 0 then
+            canStart = false
+            errorMsg = "Summoning Interface is not open"
         end
     end
 
@@ -693,6 +850,21 @@ local function drawStartupScreen(gui)
                         if main < 1 or main > 18 or prebuff < 1 or prebuff > 18 or main == prebuff then
                             presetValid = false
                         end
+                        if presetValid == true and gui.config.prebuffSummoning == true and gui.config.prebuffUseScroll == true then
+                            local selectedPouch = gui.config.prebuffSummoningPouchIndex >= 0 and Data.summoningPouches[gui.config.prebuffSummoningPouchIndex + 1] or ""
+                            if string.find(selectedPouch, "Binding contract") and not string.find(selectedPouch, "hellhound") and not string.find(selectedPouch, "kal'gerion") then
+                                local autofire = tonumber(gui.config.prebuffAutofireRate) or 0
+                                if autofire < 0 or autofire > 15 then
+                                    presetValid = false
+                                end
+                            end
+                        end
+                    end
+                    if presetValid == true and gui.config.extraBuffPrismOfRestoration == true then
+                        local prismHp = tonumber(gui.config.extraBuffPrismHpThreshold) or 0
+                        if prismHp < 1000 or prismHp > 12000 then
+                            presetValid = false
+                        end
                     end
                     if presetValid == true then
                         gui.startupMode = false
@@ -772,7 +944,7 @@ local function drawContent(gui)
 end
 
 function KerapacGUI.draw()
-    ImGui.SetNextWindowSize(340, 0, ImGuiCond.Always)
+    ImGui.SetNextWindowSize(480, 0, ImGuiCond.Always)
     ImGui.SetNextWindowPos(100, 100, ImGuiCond.FirstUseEver)
 
     ImGui.PushStyleColor(ImGuiCol.WindowBg, 0.07, 0.07, 0.09, 0.95)
@@ -859,6 +1031,16 @@ function KerapacGUI.applyToState()
     Data.prebuffWarsBonfire = cfg.prebuffWarsBonfire
     Data.prebuffThermalFlask = cfg.prebuffThermalFlask
     Data.prebuffDivineCharges = cfg.prebuffDivineCharges
+    Data.prebuffSummoning = cfg.prebuffSummoning
+    Data.prebuffSummoningPouch = cfg.prebuffSummoningPouchIndex >= 0 and Data.summoningPouches[cfg.prebuffSummoningPouchIndex + 1] or nil
+    Data.prebuffUseScroll = cfg.prebuffUseScroll
+    Data.prebuffAutofireRate = cfg.prebuffAutofireRate
+    Data.prebuffRefillRunePouches = cfg.prebuffRefillRunePouches
+    Data.prebuffRefillScriptures = cfg.prebuffRefillScriptures
+    Data.extraBuffSmokeCloud = cfg.extraBuffSmokeCloud
+    Data.extraBuffPrismOfRestoration = cfg.extraBuffPrismOfRestoration
+    Data.extraBuffPrismHpThreshold = cfg.extraBuffPrismHpThreshold
+    Data.extraBuffPowderOfPenance = cfg.extraBuffPowderOfPenance
 
     if cfg.prebuffEnabled then
         State.needsPrebuff = true

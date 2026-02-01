@@ -92,9 +92,12 @@ KerapacData.weaponPoisonItems = {
 }
 
 KerapacData.summoningPouches = {
-    "Blood nihil pouch", "Ice nihil pouch", "Shadow nihil pouch", "Smoke nihil pouch", 
     "Binding contract (ripper demon)", "Binding contract (kal'gerion demon)", 
     "Binding contract (blood reaver)", "Binding contract (hellhound)"
+}
+
+KerapacData.summoningScrolls = {
+    "Ripper Demon scroll (Death From Above)", "Kal'gerion Demon scroll (Crit-i-Kal)", "Blood Reaver scroll (Blood Siphon)", "Hellhound scroll (Soul Food)"
 }
 
 KerapacData.adrenalinePotionItems = {
@@ -106,6 +109,66 @@ KerapacData.adrenalinePotionItems = {
     "Adrenaline renewal flask (1)", "Adrenaline renewal flask (2)", "Adrenaline renewal flask (3)", "Adrenaline renewal flask (4)", "Adrenaline renewal flask (5)", "Adrenaline renewal flask (6)",
     "Replenishment potion (1)", "Replenishment potion (2)", "Replenishment potion (3)", "Replenishment potion (4)", "Replenishment potion (5)", "Replenishment potion (6)",
     "Enhanced replenishment potion (1)", "Enhanced replenishment potion (2)", "Enhanced replenishment potion (3)", "Enhanced replenishment potion (4)", "Enhanced replenishment potion (5)", "Enhanced replenishment potion (6)"
+}
+
+KerapacData.spiritualPrayerPotionItems = {
+    "Spiritual prayer potion (1)", "Spiritual prayer potion (2)", "Spiritual prayer potion (3)",
+    "Spiritual prayer potion (4)", "Spiritual prayer potion (5)", "Spiritual prayer potion (6)"
+}
+
+KerapacData.runeNames = {
+    "Air rune", "Water rune", "Fire rune", "Earth rune",
+    "Body rune", "Cosmic rune", "Chaos rune", "Nature rune",
+    "Law rune", "Death rune", "Mind rune", "Astral rune",
+    "Blood rune", "Soul rune", "Time rune",
+    "Lava rune", "Mist rune", "Smoke rune", "Steam rune", "Mud rune", "Dust rune"
+}
+
+KerapacData.runeVarbits = {
+    ["Air rune"] = {5886},
+    ["Water rune"] = {5887},
+    ["Fire rune"] = {5888},
+    ["Earth rune"] = {5889},
+    ["Body rune"] = {5896},
+    ["Cosmic rune"] = {5897},
+    ["Chaos rune"] = {5898},
+    ["Nature rune"] = {5899},
+    ["Law rune"] = {5900},
+    ["Death rune"] = {5901},
+    ["Mind rune"] = {5902},
+    ["Astral rune"] = {5903},
+    ["Blood rune"] = {5904},
+    ["Soul rune"] = {5905},
+    ["Time rune"] = {8291},
+    ["Lava rune"] = {5888, 5889},
+    ["Mist rune"] = {5886, 5887},
+    ["Smoke rune"] = {5886, 5888},
+    ["Steam rune"] = {5887, 5888},
+    ["Mud rune"] = {5887, 5889},
+    ["Dust rune"] = {5886, 5889}
+}
+
+KerapacData.runePouches = {
+    "Sealed small rune pouch", "Small rune pouch", "Sealed large rune pouch", "Large rune pouch",
+    "Sealed small rune pouch (red)", "Small rune pouch (red)", "Sealed large rune pouch (red)", "Large rune pouch (red)",
+    "Sealed small rune pouch (blue)", "Small rune pouch (blue)", "Sealed large rune pouch (blue)", "Large rune pouch (blue)",
+    "Sealed small rune pouch (yellow)", "Small rune pouch (yellow)", "Sealed large rune pouch (yellow)", "Large rune pouch (yellow)",
+    "Sealed small rune pouch (green)", "Small rune pouch (green)", "Sealed large rune pouch (green)", "Large rune pouch (green)",
+    "Sealed small rune pouch (purple)", "Small rune pouch (purple)", "Sealed large rune pouch (purple)", "Large rune pouch (purple)",
+    "Sealed small rune pouch (orange)", "Small rune pouch (orange)", "Sealed large rune pouch (orange)", "Large rune pouch (orange)",
+    "Sealed small rune pouch (black)", "Small rune pouch (black)", "Sealed large rune pouch (black)", "Large rune pouch (black)",
+    "Sealed small rune pouch (pink)", "Small rune pouch (pink)", "Sealed large rune pouch (pink)", "Large rune pouch (pink)",
+    "Grasping rune pouch", "Grasping rune pouch (blue)", "Grasping rune pouch (black)", "Grasping rune pouch (green)",
+    "Grasping rune pouch (orange)", "Grasping rune pouch (pink)", "Grasping rune pouch (purple)", "Grasping rune pouch (red)",
+    "Grasping rune pouch (yellow)"
+}
+
+KerapacData.scriptures = {
+    "Scripture of Jas", "Scripture of Wen", "Scripture of Ful", "Scripture of Amascut", "Erethdor's grimoire"
+}
+
+KerapacData.scripturePages = {
+    "Manuscript of Jas", "Manuscript of Wen", "Manuscript of Ful", "Manuscript of Amascut", "Torn grimoire page"
 }
 
 KerapacData.extraItems = {
@@ -456,6 +519,34 @@ KerapacData.extraBuffs = {
         buffId = 57126, 
         AB = nil
     },
+    grimoire = {
+        name = "Erethdor's grimoire",
+        itemId = 42787,
+        buffId = 42787,
+        AB = nil
+    },
+    smokeCloud = {
+        name = "Smoke Cloud",
+        targetBuffId = 49448,
+        AB = nil
+    },
+    prismOfRestoration = {
+        name = "Prism of Restoration",
+        AB = nil
+    },
+    castFamiliarSpecial = {
+        name = "Cast Familiar Special Ability",
+        AB = nil
+    },
+    spiritualPrayerPotion = {
+        name = "Spiritual prayer potion",
+        AB = nil
+    },
+    powderOfPenance = {
+        name = "Powder of penance",
+        buffId = 52806,
+        AB = nil
+    },
 }
 
 KerapacData.bossStateEnum = {
@@ -650,5 +741,15 @@ KerapacData.prebuffSpiritWeed = false
 KerapacData.prebuffWarsBonfire = false
 KerapacData.prebuffThermalFlask = false
 KerapacData.prebuffDivineCharges = false
+KerapacData.prebuffSummoning = false
+KerapacData.prebuffSummoningPouch = nil
+KerapacData.prebuffUseScroll = false
+KerapacData.prebuffAutofireRate = 1
+KerapacData.prebuffRefillRunePouches = false
+KerapacData.prebuffRefillScriptures = false
+KerapacData.extraBuffSmokeCloud = false
+KerapacData.extraBuffPrismOfRestoration = false
+KerapacData.extraBuffPrismHpThreshold = 5000
+KerapacData.extraBuffPowderOfPenance = false
 
 return KerapacData

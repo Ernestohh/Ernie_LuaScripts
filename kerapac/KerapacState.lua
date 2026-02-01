@@ -79,6 +79,7 @@ local KerapacState = {
     isMagePrayEnabled = false,
     isMeleePrayEnabled = false,
     isSoulSplitEnabled = false,
+    isPassivePrayerEnabled = false,
     isFullManualEnabled = false,
     isAutoRetaliateDisabled = false,
     isAbilityBarsValidated = false,
@@ -162,6 +163,7 @@ function KerapacState:Reset()
     self.isResonanceEnabled = false
     self.isMagePrayEnabled = false
     self.isSoulSplitEnabled = false
+    self.isPassivePrayerEnabled = false
     self.isMaxAdrenaline = false
     self.isEchoesDead = false
     self.isNorthEchoDead = false
