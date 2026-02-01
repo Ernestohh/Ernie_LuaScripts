@@ -68,6 +68,12 @@ local KerapacState = {
     isPhase4SetupComplete = false,
     isClonesSetup = false,
     isBeginFightComplete = false,
+
+    -- Prebuff tracking
+    needsPrebuff = false,
+    isPrebuffComplete = false,
+    hasPrebuffLoaded = false,
+    hasLoadedMainPreset = false,
     
     isResonanceEnabled = false,
     isMagePrayEnabled = false,
@@ -129,106 +135,6 @@ for key in pairs(Data.passiveBuffs) do
 end
 table.sort(KerapacState.sortedPassiveKeys)
 
-function KerapacState:InitializeFromConfig(config)
-    Logger:Info("Initializing from CONFIG")
-    
-    local function toBool(value)
-        if type(value) == "string" then
-            return value == "true"
-        else
-            return value or false
-        end
-    end
-    
-    self.selectedPassive = config.selectedPassive or "Turmoil"
-    self.isHardMode = toBool(config.isHardMode)
-    self.isInParty = toBool(config.isInParty)
-    self.isPartyLeader = toBool(config.isPartyLeader)
-    
-    -- Handle adrenaline crystal setting
-    if config.hasAdrenalineCrystal then
-        self.isMaxAdrenaline = false
-    else
-        self.isMaxAdrenaline = true
-    end
-    
-    -- Update Data with config values
-    if config.discordWebhookUrl and config.discordWebhookUrl ~= "" then
-        Data.discordWebhookUrl = config.discordWebhookUrl
-    end
-    if config.discordUserId and config.discordUserId ~= "" then
-        Data.discordUserId = config.discordUserId
-    end
-    if config.bankPin and tonumber(config.bankPin) and tonumber(config.bankPin) > 0 then
-        Data.bankPin = tonumber(config.bankPin)
-    end
-    
-    -- Handle party data only if party mode is enabled
-    if self.isInParty then
-        -- Handle party leader name
-        if config.partyLeader and config.partyLeader ~= "" then
-            Data.partyLeader = config.partyLeader
-        end
-        
-        -- Handle party members (parse comma-separated string)
-        if config.partyMembersText and config.partyMembersText ~= "" then
-            Data.partyMembers = {}
-            for member in string.gmatch(config.partyMembersText, "([^,]+)") do
-                local trimmedMember = member:match("^%s*(.-)%s*$")  -- trim whitespace
-                if trimmedMember ~= "" then
-                    table.insert(Data.partyMembers, trimmedMember)
-                end
-            end
-        end
-    else
-        -- Clear any party data when party mode is disabled
-        Data.partyLeader = nil
-        Data.partyMembers = {}
-    end
-    
-    -- Update thresholds if provided
-    if config.hpThreshold and tonumber(config.hpThreshold) then
-        Data.hpThreshold = tonumber(config.hpThreshold)
-    end
-    if config.prayerThreshold and tonumber(config.prayerThreshold) then
-        Data.prayerThreshold = tonumber(config.prayerThreshold)
-    end
-    if config.emergencyEatThreshold and tonumber(config.emergencyEatThreshold) then
-        Data.emergencyEatThreshold = tonumber(config.emergencyEatThreshold)
-    end
-    
-    -- Handle party settings
-    if self.isInParty then
-        if self.isPartyLeader then
-            -- If user marked themselves as party leader but didn't specify a name, use their current name
-            if not Data.partyLeader or Data.partyLeader == "" then
-                Data.partyLeader = API.GetLocalPlayerName()
-            end
-        elseif not Data.partyLeader or Data.partyLeader == "" then
-            Logger:Error("No party leader specified in configuration")
-            self:StopScript()
-            return
-        end
-    end
-    
-    -- Log configuration
-    Logger:Info("Selected Passive: " .. (self.selectedPassive or "None"))
-    Logger:Info("Hard mode: " .. tostring(self.isHardMode))
-    Logger:Info("In a party: " .. tostring(self.isInParty))
-    if self.isInParty then
-        Logger:Info("Am I party leader: " .. tostring(self.isPartyLeader))
-        Logger:Info("Party leader: " .. (Data.partyLeader or "None"))
-        if Data.partyMembers and #Data.partyMembers > 0 then
-            Logger:Info("Party members: " .. table.concat(Data.partyMembers, ", "))
-        end
-    end
-    Logger:Info("Discord webhook configured: " .. tostring(Data.discordWebhookUrl ~= ""))
-    Logger:Info("Discord user ID configured: " .. tostring(Data.discordUserId ~= ""))
-    Logger:Info("Bank PIN configured: " .. tostring(Data.bankPin ~= nil))
-    Logger:Info("Adrenaline crystal unlocked: " .. tostring(config.hasAdrenalineCrystal))
-    Logger:Info("Configuration initialization complete")
-end
-
 function KerapacState:Reset()
     Logger:Info("Resetting script state")
     
@@ -274,7 +180,14 @@ function KerapacState:Reset()
     self.kerapacPhase = 1
     self.isScriptureEquipped = false
     self.hasScriptureBuff = false
-    
+
+    -- Reset prebuff states (needsPrebuff stays true if enabled, hasLoadedMainPreset persists across kills)
+    self.isPrebuffComplete = false
+    self.hasPrebuffLoaded = false
+    if Data.prebuffEnabled then
+        self.needsPrebuff = true
+    end
+
     Logger:Info("State reset complete")
 end
 

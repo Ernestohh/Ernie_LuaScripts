@@ -122,6 +122,327 @@ function KerapacPreparation:HandleBanking()
     State.isBanking = true
 end
 
+function KerapacPreparation:OpenPresetInterface()
+    if API.GetVarbitValue(45223) ~= 1 then
+        Logger:Info("Opening preset interface")
+        API.DoAction_Interface(0x2e, 0xffffffff, 1, 517, 153, -1, API.OFF_ACT_GeneralInterface_route)
+        Utils:SleepTickRandom(2)
+        return API.GetVarbitValue(45223) == 1
+    end
+    return true
+end
+
+function KerapacPreparation:EnsureCorrectPresetPage(presetNumber)
+    local needsPage2 = presetNumber > 9
+    local currentPage = API.GetVarbitValue(49662)
+
+    if needsPage2 and currentPage == 0 then
+        Logger:Info("Switching to preset page 2")
+        API.DoAction_Interface(0x24, 0xffffffff, 1, 517, 119, 100, API.OFF_ACT_GeneralInterface_route)
+        Utils:SleepTickRandom(2)
+        return true
+    elseif not needsPage2 and currentPage == 1 then
+        Logger:Info("Switching to preset page 1")
+        API.DoAction_Interface(0x24, 0xffffffff, 1, 517, 119, 100, API.OFF_ACT_GeneralInterface_route)
+        Utils:SleepTickRandom(2)
+        return true
+    end
+    return true
+end
+
+function KerapacPreparation:LoadPresetNumber(presetNumber)
+    local interfacePresetNum = presetNumber
+    if presetNumber > 9 then
+        interfacePresetNum = presetNumber - 9
+    end
+
+    Logger:Info("Loading preset " .. presetNumber)
+    API.DoAction_Interface(0x24, 0xffffffff, 1, 517, 119, interfacePresetNum, API.OFF_ACT_GeneralInterface_route)
+    Utils:SleepTickRandom(3)
+end
+
+function KerapacPreparation:HandlePrebuffPreset()
+    if not Data.prebuffEnabled or State.isPrebuffComplete then
+        return
+    end
+
+    if not State.needsPrebuff then
+        return
+    end
+
+    if self:CheckPrebuffsActive() then
+        Logger:Info("All prebuffs already active, skipping prebuff process")
+        State.isPrebuffComplete = true
+        State.needsPrebuff = false
+        State.hasPrebuffLoaded = true
+        return
+    end
+
+    Logger:Info("Starting prebuff process")
+    API.DoAction_Object1(0x33, API.OFF_ACT_GeneralObject_route1, { 114750 }, 50)
+    API.WaitUntilMovingEnds(10, 4)
+
+    for attempt = 1, 10 do
+        if API.BankOpen2() then break end
+        Logger:Debug("Waiting for bank to open... attempt " .. attempt)
+        Utils:SleepTickRandom(4)
+    end
+
+    if not API.BankOpen2() then
+        Logger:Error("Bank not open for prebuff preset after retries")
+        return
+    end
+
+    self:HandleBankPin()
+    Utils:SleepTickRandom(2)
+
+    if not self:OpenPresetInterface() then
+        Logger:Error("Failed to open preset interface")
+        return
+    end
+
+    self:EnsureCorrectPresetPage(Data.prebuffPreset)
+    self:LoadPresetNumber(Data.prebuffPreset)
+    State.hasPrebuffLoaded = true
+    Utils:SleepTickRandom(2)
+    self:ApplyPrebuffs()
+
+    State.isPrebuffComplete = true
+    State.needsPrebuff = false
+    State.hasLoadedMainPreset = false
+    Logger:Info("Prebuff process complete")
+end
+
+function KerapacPreparation:ApplyPrebuffs()
+    Logger:Info("Applying prebuffs...")
+
+    if Data.prebuffKwuarm and Inventory:Contains(47709) then
+        local buffStatus = API.Buffbar_GetIDstatus(47709)
+        local potency = buffStatus.found and tonumber(buffStatus.text) or 0
+
+        if not buffStatus.found or potency < 4 then
+            Logger:Info("Overloading Kwuarm incense stick")
+            API.DoAction_Inventory1(47709, 0, 2, API.OFF_ACT_GeneralInterface_route)
+            Utils:SleepTickRandom(1)
+        end
+
+        local function getBuffMinutes()
+            local status = API.Buffbar_GetIDstatus(47709)
+            if not status.found then return 0 end
+            local minutes = tonumber(tostring(status.text):match("(%d+)m"))
+            return minutes or 0
+        end
+
+        local currentMinutes = getBuffMinutes()
+        local usesNeeded = math.floor((51 - currentMinutes) / 10)
+        if usesNeeded > 0 then
+            Logger:Info("Kwuarm incense needs " .. usesNeeded .. " uses (currently " .. currentMinutes .. "m)")
+            for i = 1, usesNeeded do
+                Logger:Info("Adding time to Kwuarm incense (" .. i .. "/" .. usesNeeded .. ")")
+                API.DoAction_Inventory1(47709, 0, 1, API.OFF_ACT_GeneralInterface_route)
+                Utils:SleepTickRandom(1)
+                if not API.Read_LoopyLoop() then break end
+            end
+        end
+
+        Logger:Info("Kwuarm incense ready: " .. getBuffMinutes() .. "m")
+    end
+
+    if Data.prebuffLantadyme and Inventory:Contains(47713) then
+        local buffStatus = API.Buffbar_GetIDstatus(47713)
+        local potency = buffStatus.found and tonumber(buffStatus.text) or 0
+
+        if not buffStatus.found or potency < 4 then
+            Logger:Info("Overloading Lantadyme incense stick")
+            API.DoAction_Inventory1(47713, 0, 2, API.OFF_ACT_GeneralInterface_route)
+            Utils:SleepTickRandom(1)
+        end
+
+        local function getBuffMinutes()
+            local status = API.Buffbar_GetIDstatus(47713)
+            if not status.found then return 0 end
+            local minutes = tonumber(tostring(status.text):match("(%d+)m"))
+            return minutes or 0
+        end
+
+        local currentMinutes = getBuffMinutes()
+        local usesNeeded = math.floor((51 - currentMinutes) / 10)
+        if usesNeeded > 0 then
+            Logger:Info("Lantadyme incense needs " .. usesNeeded .. " uses (currently " .. currentMinutes .. "m)")
+            for i = 1, usesNeeded do
+                Logger:Info("Adding time to Lantadyme incense (" .. i .. "/" .. usesNeeded .. ")")
+                API.DoAction_Inventory1(47713, 0, 1, API.OFF_ACT_GeneralInterface_route)
+                Utils:SleepTickRandom(1)
+                if not API.Read_LoopyLoop() then break end
+            end
+        end
+
+        Logger:Info("Lantadyme incense ready: " .. getBuffMinutes() .. "m")
+    end
+
+    if Data.prebuffSpiritWeed and Inventory:Contains(47705) then
+        local buffStatus = API.Buffbar_GetIDstatus(47705)
+        local potency = buffStatus.found and tonumber(buffStatus.text) or 0
+
+        if not buffStatus.found or potency < 4 then
+            Logger:Info("Overloading Spirit weed incense stick")
+            API.DoAction_Inventory1(47705, 0, 2, API.OFF_ACT_GeneralInterface_route)
+            Utils:SleepTickRandom(1)
+        end
+
+        local function getBuffMinutes()
+            local status = API.Buffbar_GetIDstatus(47705)
+            if not status.found then return 0 end
+            local minutes = tonumber(tostring(status.text):match("(%d+)m"))
+            return minutes or 0
+        end
+
+        local currentMinutes = getBuffMinutes()
+        local usesNeeded = math.floor((51 - currentMinutes) / 10)
+        if usesNeeded > 0 then
+            Logger:Info("Spirit weed incense needs " .. usesNeeded .. " uses (currently " .. currentMinutes .. "m)")
+            for i = 1, usesNeeded do
+                Logger:Info("Adding time to Spirit weed incense (" .. i .. "/" .. usesNeeded .. ")")
+                API.DoAction_Inventory1(47705, 0, 1, API.OFF_ACT_GeneralInterface_route)
+                Utils:SleepTickRandom(1)
+                if not API.Read_LoopyLoop() then break end
+            end
+        end
+
+        Logger:Info("Spirit weed incense ready: " .. getBuffMinutes() .. "m")
+    end
+
+    if Data.prebuffThermalFlask and Inventory:Contains({38403,47637,47639,47641,47643,47645}) then
+        if not API.Buffbar_GetIDstatus(47637).found then
+            Logger:Info("Using Thermal flask")
+            local thermalFlaskIds = {38403,47637,47639,47641,47643,47645}
+            local found = false
+            for _, id in ipairs(thermalFlaskIds) do
+                if Inventory:Contains(id) then
+                        API.DoAction_Inventory1(id, 0, 1, API.OFF_ACT_GeneralInterface_route)
+                        Utils:SleepTickRandom(2)
+                    break
+                end
+            end
+        else
+            Logger:Info("Thermal flask buff already active")
+        end
+    end
+
+    if Data.prebuffDivineCharges and Inventory:Contains(36390) and (API.VB_FindPSett(5984).state - 1488)/3000 < 495000 then
+        Logger:Info("Using Divine charges")
+        API.DoAction_Inventory1(36390,0,7,API.OFF_ACT_GeneralInterface_route2)
+        Utils:SleepTickRandom(2)
+    end
+
+    if Data.prebuffWarsBonfire then
+        if not API.Buffbar_GetIDstatus(10931).found then
+            Logger:Info("Using War's Bonfire")
+            API.DoAction_Object1(0x29, API.OFF_ACT_GeneralObject_route0, { 114758 }, 50)
+            API.WaitUntilMovingandAnimEnds(10, 4)
+            Utils:SleepTickRandom(2)
+        else
+            Logger:Info("War's Bonfire buff already active")
+        end
+    end
+    Logger:Info("Prebuffs applied")
+end
+
+function KerapacPreparation:HandleMainPreset()
+    if not Data.prebuffEnabled then
+        return
+    end
+
+    if not State.isPrebuffComplete then
+        return
+    end
+
+    Logger:Info("Loading main preset after prebuffing")
+    API.DoAction_Object1(0x33, API.OFF_ACT_GeneralObject_route1, { 114750 }, 50)
+    API.WaitUntilMovingEnds(10, 4)
+
+    for attempt = 1, 10 do
+        if API.BankOpen2() then break end
+        Logger:Debug("Waiting for bank to open... attempt " .. attempt)
+        Utils:SleepTickRandom(4)
+    end
+
+    if not API.BankOpen2() then
+        Logger:Error("Bank not open for main preset after retries")
+        return
+    end
+
+    self:HandleBankPin()
+    Utils:SleepTickRandom(2)
+
+    if not self:OpenPresetInterface() then
+        Logger:Error("Failed to open preset interface")
+        return
+    end
+
+    self:EnsureCorrectPresetPage(Data.mainPreset)
+    self:LoadPresetNumber(Data.mainPreset)
+    Logger:Info("Main preset loaded")
+end
+
+function KerapacPreparation:CheckPrebuffsActive()
+    if Data.prebuffKwuarm then
+        local status = API.Buffbar_GetIDstatus(47709)
+        if not status.found then
+            Logger:Debug("Kwuarm incense buff not found")
+            return false
+        end
+    end
+
+    if Data.prebuffLantadyme then
+        local status = API.Buffbar_GetIDstatus(47713)
+        if not status.found then
+            Logger:Debug("Lantadyme incense buff not found")
+            return false
+        end
+    end
+
+    if Data.prebuffSpiritWeed then
+        local status = API.Buffbar_GetIDstatus(47705)
+        if not status.found then
+            Logger:Debug("Spirit weed incense buff not found")
+            return false
+        end
+    end
+
+    if Data.prebuffThermalFlask then
+        local thermalFlaskIds = {38403,47637,47639,47641,47643,47645}
+        local found = false
+        for _, id in ipairs(thermalFlaskIds) do
+            if API.Buffbar_GetIDstatus(id).found then
+                found = true
+                break
+            end
+        end
+        if not found then
+            Logger:Debug("Thermal flask buff not found")
+            return false
+        end
+    end
+
+    if Data.prebuffDivineCharges then
+        if (API.VB_FindPSett(5984).state - 1488) / 3000 < 15000 then
+            Logger:Debug("Divine charges below threshold")
+            return false
+        end
+    end
+
+    if Data.prebuffWarsBonfire then
+        local status = API.Buffbar_GetIDstatus(10931)
+        if not status.found then
+            Logger:Debug("War's Bonfire buff not found")
+            return false
+        end
+    end
+
+    return true
+end
+
 function KerapacPreparation:PrepareForBattle()
     Utils:CheckWeaponType()
     Utils:CheckForZukCape()

@@ -1,7 +1,7 @@
 -- Title: Kerapac Bosser
 -- Author: Ernie
 -- Description: Kills Kerapac
--- Version: 11.0
+-- Version: 13.0
 -- Category: PvM
 
 local API = require("api")
@@ -14,38 +14,50 @@ local Utils = require("kerapac/KerapacUtils")
 local Preparation = require("kerapac/KerapacPreparation")
 local Loot = require("kerapac/KerapacLoot")
 local Lightning = require("kerapac/KerapacLightning")
+local GUI = require("kerapac/KerapacGUI")
 
 Logger:Info("Started Ernie's Kerapac Bosser " .. Data.version)
 API.SetMaxIdleTime(5)
 API.Write_fake_mouse_do(false)
 API.TurnOffMrHasselhoff(false)
--- Initialize configuration from CONFIG if available
-if CONFIG then
-    Logger:Info("Loading configuration from CONFIG")
-    State:InitializeFromConfig(CONFIG)
-else
-    Logger:Error("No configuration found! Please configure the script first.")
-    API.Write_LoopyLoop(false)
-end
 
-Combat:InitAbilities()
-Utils:handleCombatMode()
-State.startScript = true
-
+GUI.loadConfig()
+DrawImGui(function()
+    if GUI.open then
+        GUI.draw()
+    end
+end)
+API.SetDrawLogs(false)
 while (API.Read_LoopyLoop()) do
-    if State.startScript then
-        API.SetDrawLogs(false)
-        Utils:TrackingData()
+    if GUI.started then
+        if not State.startScript then
+            GUI.applyToState()
+            Combat:InitAbilities()
+            Utils:handleCombatMode()
+            State.startScript = true
+            Logger:Info("Configuration applied, starting script")
+        end
+
         if not State.isInBattle and not State.isTimeToLoot then
             if not State.isInWarsRetreat then
                 Preparation:CheckStartLocation()
             end
-            
+
             if State.isInWarsRetreat and not State.isRestoringPrayer and not State.isPrepared and API.Read_LoopyLoop() then
                 Preparation:HandlePrayerRestore()
             end
 
-            if State.isInWarsRetreat and not State.isBanking and not State.isPrepared and API.Read_LoopyLoop() then
+            if State.isInWarsRetreat and State.isRestoringPrayer and Data.prebuffEnabled and State.needsPrebuff and not State.hasPrebuffLoaded and API.Read_LoopyLoop() then
+                Preparation:HandlePrebuffPreset()
+            end
+
+            if State.isInWarsRetreat and State.isRestoringPrayer and Data.prebuffEnabled and State.isPrebuffComplete and not State.hasLoadedMainPreset and not State.isPrepared and API.Read_LoopyLoop() then
+                Preparation:HandleMainPreset()
+                State.hasLoadedMainPreset = true
+                State.isBanking = true
+            end
+
+            if State.isInWarsRetreat and not State.isBanking and not State.isPrepared and (not Data.prebuffEnabled or State.hasLoadedMainPreset) and API.Read_LoopyLoop() then
                 Preparation:HandleBanking()
             end
 
@@ -56,15 +68,15 @@ while (API.Read_LoopyLoop()) do
             if State.isPrepared and not State.isMaxAdrenaline and API.Read_LoopyLoop() then
                 Preparation:HandleAdrenalineCrystal()
             end
-            
+
             if State.isPrepared and State.isMaxAdrenaline and not State.isPortalUsed and API.Read_LoopyLoop() then
-               Preparation:GoThroughPortal() 
+                Preparation:GoThroughPortal()
             end
-            
+
             if State.isPortalUsed and not State.isInArena and API.Read_LoopyLoop() then
-                Preparation:GoThroughGate() 
+                Preparation:GoThroughGate()
             end
-            
+
             if State.isInArena and API.Read_LoopyLoop() then
                 Preparation:StartEncounter()
                 Preparation:CheckKerapacExists()
@@ -79,7 +91,7 @@ while (API.Read_LoopyLoop()) do
             if State.kerapacPhase >= 4 then
                 Lightning:AvoidLightningBolts()
                 HardMode:Phase4Setup()
-                if State.isPhase4SetupComplete then 
+                if State.isPhase4SetupComplete then
                     Lightning:AvoidLightningBolts()
                     HardMode:HandlePhase4()
                     Combat:ManagePlayer()
@@ -103,4 +115,5 @@ while (API.Read_LoopyLoop()) do
     end
 end
 
+ClearRender()
 Logger:Info("Stopped Ernie's Kerapac Bosser " .. Data.version)

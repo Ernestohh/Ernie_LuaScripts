@@ -463,14 +463,6 @@ function KerapacUtils:ValidateAbilityBars()
 
     if State.isHardMode and (State.isPartyLeader or not State.isInParty) then
         if not hasVitPot then
-            local data = {
-                { "Ernie's Kerapac Bosser ", "Version: " .. Data.version },
-                { "-------", "-------" },
-                { "- Missing powerburst of vitality", ""},
-                { "-------", "-------" }
-            }
-        
-            API.DrawTable(data)
             Logger:Error("No Powerburst of vitality found in Inventory")
             API.Write_LoopyLoop(false)
         end
@@ -602,14 +594,6 @@ function KerapacUtils:ValidateAbilityBars()
     end
 
     if hasAnyMissing then
-            local data = {
-        { "Ernie's Kerapac Bosser ", "Version: " .. Data.version },
-        { "-------", "-------" },
-        { "- Missing items on Ability bar", message},
-        { "-------", "-------" }
-    }
-
-    API.DrawTable(data)
         Logger:Error("Your ability bar is missing the following: " .. message)
         API.Write_LoopyLoop(false)
     end
@@ -778,17 +762,6 @@ function KerapacUtils:forceUseTimeWarpBuff()
 end
 
 function KerapacUtils:TrackingData()
-    local data = {
-        { "Ernie's Kerapac Bosser ", "Version: " .. Data.version },
-        { "-------", "-------" },
-        { "Data:",API.ScriptRuntimeString() },
-        { "- Total Kills", Data.totalKills},
-        { "- Total Deaths", Data.totalDeaths},
-        { "- Total Rares", Data.totalRares},
-        { "-------", "-------" },
-    }
-
-    API.DrawTable(data)
 end
 
 function KerapacUtils:SendDropNotification(rareDrop)

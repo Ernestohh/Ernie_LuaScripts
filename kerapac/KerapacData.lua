@@ -1,6 +1,6 @@
 local KerapacData = {}
 
-KerapacData.version = "12.0"
+KerapacData.version = "13.0"
 
 KerapacData.prayerType = {
     Curses = { name = "Curses" },
@@ -640,5 +640,15 @@ KerapacData.timeWarpBuff = 15142
 KerapacData.totalKills = 0
 KerapacData.totalRares = 0
 KerapacData.totalDeaths = 0
+
+KerapacData.prebuffEnabled = false
+KerapacData.mainPreset = 1
+KerapacData.prebuffPreset = 2
+KerapacData.prebuffKwuarm = false
+KerapacData.prebuffLantadyme = false
+KerapacData.prebuffSpiritWeed = false
+KerapacData.prebuffWarsBonfire = false
+KerapacData.prebuffThermalFlask = false
+KerapacData.prebuffDivineCharges = false
 
 return KerapacData
