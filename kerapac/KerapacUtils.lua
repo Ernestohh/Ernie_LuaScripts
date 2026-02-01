@@ -630,6 +630,7 @@ end
 
 function KerapacUtils:CheckWeaponType()
     local equippedItems = API.Container_Get_all(94)
+    State.residualSoulsMax = 2
     for i = 1, #equippedItems do
         local itemId = equippedItems[i].item_id
         
@@ -648,7 +649,7 @@ function KerapacUtils:CheckWeaponType()
                 break
             end
         end
-         for l = 1, #Data.soulboundLanternIds do
+        for l = 1, #Data.soulboundLanternIds do
             if itemId == Data.soulboundLanternIds[l] then
                 State.hasSoulboundLanternEquipped = true
                 State.residualSoulsMax = 4
