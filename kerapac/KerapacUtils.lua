@@ -648,8 +648,8 @@ function KerapacUtils:CheckWeaponType()
                 break
             end
         end
-         for l = 1, #Data.soulbornLanternIds do
-            if itemId == Data.soulbornLanternIds[l] then
+         for l = 1, #Data.soulboundLanternIds do
+            if itemId == Data.soulboundLanternIds[l] then
                 State.hasSoulboundLanternEquipped = true
                 State.residualSoulsMax = 4
                 Logger:Info("Soulbound Lantern equipped")

@@ -464,11 +464,15 @@ local function drawConfigTab(cfg, gui)
 
         ImGui.TextWrapped("Main Preset (1-18)")
         local mainChanged, mainVal = ImGui.InputInt("##mainpreset", cfg.mainPreset, 1, 1)
-        if mainChanged then cfg.mainPreset = math.max(1, math.min(18, mainVal)) end
+        if mainChanged then
+            cfg.mainPreset = mainVal
+        end
 
         ImGui.TextWrapped("Prebuff Preset (1-18)")
         local prebuffPresetChanged, prebuffPresetVal = ImGui.InputInt("##prebuffpreset", cfg.prebuffPreset, 1, 1)
-        if prebuffPresetChanged then cfg.prebuffPreset = math.max(1, math.min(18, prebuffPresetVal)) end
+        if prebuffPresetChanged then
+            cfg.prebuffPreset = prebuffPresetVal
+        end
 
         ImGui.Spacing()
         ImGui.PushStyleColor(ImGuiCol.Text, 0.5, 0.8, 0.9, 1.0)
@@ -520,14 +524,48 @@ local function drawConfigTab(cfg, gui)
     ImGui.Separator()
     ImGui.Spacing()
 
-    ImGui.PushStyleColor(ImGuiCol.Button, 0.15, 0.55, 0.15, 0.9)
-    ImGui.PushStyleColor(ImGuiCol.ButtonHovered, 0.2, 0.7, 0.2, 1.0)
-    ImGui.PushStyleColor(ImGuiCol.ButtonActive, 0.1, 0.85, 0.1, 1.0)
+    local canStart = true
+    local errorMsg = nil
+
+    if cfg.prebuffEnabled == true then
+        local main = tonumber(cfg.mainPreset) or 0
+        local prebuff = tonumber(cfg.prebuffPreset) or 0
+
+        if main < 1 or main > 18 then
+            canStart = false
+            errorMsg = "Main preset must be 1-18"
+        elseif prebuff < 1 or prebuff > 18 then
+            canStart = false
+            errorMsg = "Prebuff preset must be 1-18"
+        elseif main == prebuff then
+            canStart = false
+            errorMsg = "Main and Prebuff presets cannot be the same"
+        end
+    end
+
+    if errorMsg ~= nil then
+        ImGui.PushStyleColor(ImGuiCol.Text, 1.0, 0.4, 0.4, 1.0)
+        ImGui.TextWrapped(errorMsg)
+        ImGui.PopStyleColor(1)
+        ImGui.Spacing()
+    end
+
+    if canStart == true then
+        ImGui.PushStyleColor(ImGuiCol.Button, 0.15, 0.55, 0.15, 0.9)
+        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, 0.2, 0.7, 0.2, 1.0)
+        ImGui.PushStyleColor(ImGuiCol.ButtonActive, 0.1, 0.85, 0.1, 1.0)
+    else
+        ImGui.PushStyleColor(ImGuiCol.Button, 0.3, 0.3, 0.3, 0.9)
+        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, 0.3, 0.3, 0.3, 0.9)
+        ImGui.PushStyleColor(ImGuiCol.ButtonActive, 0.3, 0.3, 0.3, 0.9)
+    end
     if ImGui.Button("Start Script##start", -1, 30) then
-        saveConfigToFile(gui.config)
-        gui.started = true
-        gui.selectInfoTab = true
-        gui.tabBarId = gui.tabBarId + 1
+        if canStart == true then
+            saveConfigToFile(gui.config)
+            gui.started = true
+            gui.selectInfoTab = true
+            gui.tabBarId = gui.tabBarId + 1
+        end
     end
     ImGui.PopStyleColor(3)
 end
@@ -648,9 +686,23 @@ local function drawStartupScreen(gui)
         for _, presetName in ipairs(KerapacGUI.presetList) do
             if ImGui.Button(presetName .. "##preset_" .. presetName, -1, 28) then
                 if loadPreset(presetName) then
-                    gui.startupMode = false
-                    gui.started = true
-                    gui.selectInfoTab = true
+                    local presetValid = true
+                    if gui.config.prebuffEnabled == true then
+                        local main = tonumber(gui.config.mainPreset) or 0
+                        local prebuff = tonumber(gui.config.prebuffPreset) or 0
+                        if main < 1 or main > 18 or prebuff < 1 or prebuff > 18 or main == prebuff then
+                            presetValid = false
+                        end
+                    end
+                    if presetValid == true then
+                        gui.startupMode = false
+                        gui.started = true
+                        gui.selectInfoTab = true
+                    else
+                        gui.startupMode = false
+                        gui.selectConfigTab = true
+                        gui.tabBarId = gui.tabBarId + 1
+                    end
                 end
             end
         end

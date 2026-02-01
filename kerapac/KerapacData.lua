@@ -602,8 +602,8 @@ KerapacData.rareDrops = {
 }
 
 KerapacData.deathGuardIds = {55524, 55532, 55540, 55528, 55536, 55544}
-KerapacData.omniGuardIds = {55484, 55480}
-KerapacData.soulbornLanternIds = {55482, 55485}
+KerapacData.omniGuardIds = {55484, 55480, 56426,56427,56429,56430,56432,56433,56435,56436,56438,56439,56441,56442,56444,56445}
+KerapacData.soulbornLanternIds = {55482, 55485,56489, 56490, 56492, 56493, 56495, 56496, 56498, 56499, 56501, 56502, 56504, 56505, 56507, 56508}
 KerapacData.deathSparkReady = 30127
 
 KerapacData.MARGIN = 100
