@@ -241,7 +241,6 @@ function KerapacPreparation:ApplyPrebuffs()
                 Logger:Info("Adding time to Kwuarm incense (" .. i .. "/" .. usesNeeded .. ")")
                 API.DoAction_Inventory1(47709, 0, 1, API.OFF_ACT_GeneralInterface_route)
                 Utils:SleepTickRandom(1)
-                if not API.Read_LoopyLoop() then break end
             end
         end
 
@@ -273,7 +272,6 @@ function KerapacPreparation:ApplyPrebuffs()
                 Logger:Info("Adding time to Lantadyme incense (" .. i .. "/" .. usesNeeded .. ")")
                 API.DoAction_Inventory1(47713, 0, 1, API.OFF_ACT_GeneralInterface_route)
                 Utils:SleepTickRandom(1)
-                if not API.Read_LoopyLoop() then break end
             end
         end
 
@@ -305,7 +303,6 @@ function KerapacPreparation:ApplyPrebuffs()
                 Logger:Info("Adding time to Spirit weed incense (" .. i .. "/" .. usesNeeded .. ")")
                 API.DoAction_Inventory1(47705, 0, 1, API.OFF_ACT_GeneralInterface_route)
                 Utils:SleepTickRandom(1)
-                if not API.Read_LoopyLoop() then break end
             end
         end
 
